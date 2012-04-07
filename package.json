@@ -1,0 +1,20 @@
+{
+  "author": "CatchCo",
+  "name": "scbuildanalyzer",
+  "description": "A web app to help show the effects of a change to a build order.",
+  "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/bcatcho/node-scbuildanalyzer.git"
+  },
+  "dependencies": {
+    "express": "latest",
+    "jade": "latest",
+    "request": "latest"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
