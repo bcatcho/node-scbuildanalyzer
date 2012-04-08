@@ -7,8 +7,9 @@ app.use(express.static('pub'));
 app.set('view engine', 'jade');
 
 app.get('/', function(req, res) {
-   res.render('index');
+	res.render('index');
 });
 
 var port = process.env.PORT || 8080;
 app.listen(port);
+
