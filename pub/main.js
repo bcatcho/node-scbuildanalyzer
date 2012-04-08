@@ -62,7 +62,7 @@ function RunSim() {
 	data.push([0, 0]);
 	data.push([0, 0]);
 
-	for (var t = 1; t < 300; ++t) {
+	for (var t = 1; t < 600; ++t) {
 
 		updateBuildSupply(t);
 
@@ -74,12 +74,13 @@ function RunSim() {
 			addWorker(t);
 		}
 
-		data[0].push([t, state.workers]);
 
 		var minPerSec = (40 / 60) * state.workers;
 		state.totalMin += minPerSec;
 		data[1].push([t, state.totalMin]);
-	}
+    
+    data[0].push([t, 40*state.workers]);
+  }
 
 	var options = {
 		zoom: {
