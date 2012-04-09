@@ -17,6 +17,7 @@
 /* #Site Styles
 ================================================== */
 
+
 /* #Page Styles
 ================================================== */
 
@@ -46,6 +47,8 @@
 		copy your FontName into code below and remove
 		comment brackets */
 
+
+@import url('http://fonts.googleapis.com/css?family=Pontano+Sans');
 /*	@font-face {
 	    font-family: 'FontName';
 	    src: url('../fonts/FontName.eot');

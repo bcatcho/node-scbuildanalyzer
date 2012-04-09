@@ -17,6 +17,7 @@ function RunSim() {
 	var state = {
 		nextWorkerBuildTime: stats.probe.buildTime,
 		workers: 6,
+		patches: 10,
 		totalMin: 0,
 		supply: 6,
 		supplyCap: 10,
@@ -59,39 +60,88 @@ function RunSim() {
 		return state.totalMin >= unit.cost.m
 	}
 
+	var markings = [];
+
 	data.push([0, 0]);
 	data.push([0, 0]);
-
-	for (var t = 1; t < 600; ++t) {
-
+	for (var t = 1; t < 1200; ++t) {
+		var currentTime = new Date(t * 1000);
 		updateBuildSupply(t);
 
 		if (remainingSupply() < 3 && ! state.buildingSupply && canAfford(stats.pylon)) {
 			buildSupply(t);
+			//markings.push({
+			//xaxis: {
+			//from: currentTime,
+			//to: currentTime
+			//},
+			//color: '#cfe4fd'
+			//});
 		}
 
 		if (t >= state.nextWorkerBuildTime && canAfford(stats.probe) && remainingSupply() > 0) {
-			addWorker(t);
+			// show a bad player. increas the first number to add a chance to miss a probe
+			if (Math.floor((Math.random() * 1) + 1) == 1) {
+				addWorker(t);
+			}
+			if (state.workers % 30 == 0) {
+				markings.push({
+					xaxis: {
+						from: currentTime,
+						to: currentTime
+					},
+					color: '#f4bfbd'
+				});
+			}
 		}
-
-
-		var minPerSec = (40 / 60) * state.workers;
+		var twoWorkerRate = Math.min(state.workers, state.patches * 2) * (40 / 60);
+		var thirdWorkerRate = 0;
+		if (state.workers > state.patches * 2) {
+			thirdWorkerRate = Math.min(state.workers - (state.patches * 2), state.patches) * (20 / 60);
+		}
+		var minPerSec = twoWorkerRate + thirdWorkerRate;
 		state.totalMin += minPerSec;
-		data[1].push([t, state.totalMin]);
-    
-    data[0].push([t, 40*state.workers]);
-  }
+		data[1].push([currentTime, state.totalMin]);
+		data[0].push([currentTime, minPerSec * 200]);
+
+	}
 
 	var options = {
 		zoom: {
-			interactive: true
+			interactive: false
 		},
 		pan: {
-			interactive: true
+			interactive: false
+		},
+		grid: {
+			borderWidth: 0,
+			markings: markings
+		},
+		xaxis: {
+			mode: 'time',
+			timeformat: '%M:%S'
 		}
 	};
 
-	$.plot($("#placeholder"), data, options);
+	var series = [{
+		data: data[0],
+		shadowSize: 0,
+		hoverable: true,
+		clickable: true,
+		lines: {
+			lineWidth: 1,
+		}
+	},
+	{
+		data: data[1],
+		shadowSize: 0,
+		lines: {
+			lineWidth: 1,
+		}
+	},
+	];
+
+	$.plot($("#placeholder"), series, options);
 }
 
 $(function() {
