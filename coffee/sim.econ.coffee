@@ -1,4 +1,5 @@
 {_} = require 'underscore'
+_.mixin rot: (arr, num=1) -> @rest(arr, num).concat @first(arr, num)
 
 class SimActor
    constructor: ->
@@ -21,6 +22,11 @@ class SimActor
       parts = for n,v of fn when n isnt 'messages'
          v.messages = fn.messages
          @::["state_"+n] = v
+   
+   isExpired: (t) -> t <= 0
+
+   sayAfter: (timeSpan, a, b, c, d, e, f) ->
+     (t) -> @say(a,b,c,d,e,f) if @isExpired timeSpan--
 
 class EconSim extends SimActor
   constructor: (baseCount) ->
@@ -30,7 +36,7 @@ class EconSim extends SimActor
 class Base extends SimActor
   constructor: (mineralPatchCount = 8, gasGyserCount = 2) ->
     @workers
-    @mins = (new MineralPatch for i in [1..mineralPatchCount])
+    @mins = (new MineralPatch(@) for i in [1..mineralPatchCount])
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.workers.length
@@ -38,9 +44,10 @@ class Base extends SimActor
 
 
 class MineralPatch extends SimActor
-  constructor: (startingAmt) ->
-    @amt = startingAmt || 100
-    @workers = []
+  constructor: (base, startingAmt = 100) ->
+    @amt = startingAmt 
+    @base = base
+    @workers = [] 
     @switchStateTo 'default'
     @workerMining = null
 
@@ -50,15 +57,19 @@ class MineralPatch extends SimActor
   @state
     default: -> =>
     messages:
-      attachWorker: (worker) ->
-        @workers.push worker
+      attachWorker: (wrkr) ->
+        @workers.push wrkr
 
       mineralsHarvested: (amtHarvested) ->
         @amt -= amtHarvested
 
-      workerStartedMining: (worker) ->
-        @workerMining = worker
+      workerStartedMining: (wrkr) ->
+        @workerMining = wrkr
 
+      workerFinishedMiningXminerals: (wrkr, amtMined) ->
+        @workerMining = null
+        @workers = _.rot(@workers)
+        @amt -= amtMined
 
 
 class Worker extends SimActor
@@ -73,7 +84,6 @@ class Worker extends SimActor
     created: (t) -> (t) =>
     messages:
       gatherMinerals: (base) ->
-        @base = base
         @say 'gatherFromMinPatch', base.getMostAvailableMinPatch()
 
       gatherFromMinPatch: (minPatch) ->
@@ -83,9 +93,13 @@ class Worker extends SimActor
   @state
     mining: (minPatch) ->
       minPatch.say 'workerStartedMining', @
-      miningTimeLeft = @t_mine
-      (t) =>
-        miningTimeLeft--
+      @sayAfter @t_mine, 'finishedMining', minPatch
+    
+    messages:
+      finishedMining: (minPatch) ->
+        minPatch.say 'workerFinishedMiningXminerals', @, @collectAmt
+        @switchStateTo 'returningMinsToBase', minPatch.base 
+
 
   @state
     waitingToMine: (minPatch) -> (t) ->
@@ -94,10 +108,7 @@ class Worker extends SimActor
 
   @state
     travelingToMinPatch: (minPatch) ->
-      travelTimeLeft = @t_toPatch
-      (t) =>
-        travelTimeLeft--
-        if travelTimeLeft < 0 then @say 'arrivedAtMinPatch', minPatch
+      @sayAfter @t_toPatch, 'arrivedAtMinPatch', minPatch
 
     messages:
       arrivedAtMinPatch: (minPatch) ->
@@ -105,6 +116,14 @@ class Worker extends SimActor
           @switchStateTo 'mining', minPatch
         else
           @switchStateTo 'waitingToMine', minPatch
+
+  @state
+    returningMinsToBase: (base) ->
+      @sayAfter @t_toBase, 'arrivedAtBase', base 
+
+    messages:
+      arrivedAtBase: (base) ->
+
 
 #exports
 root = exports ? window  
