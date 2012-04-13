@@ -1,9 +1,26 @@
+{_} = require 'underscore'
+
 class SimActor
-  constructor: ->
+   constructor: ->
+      @events = {}
+      @currentState
+      @currentTransitions
 
-  $ay: (msgName, args...) ->
-    @['msg_'+msgName](args)
+   switchStateTo: (sn,a,b,c,d,e,f) ->
+      @stateName = sn
+      @currentState = @["state_"+sn] a,b,c,d,e,f
+      @currentTransitions = @["state_"+sn].messages
 
+   say: (msgName, arg1, arg2, arg3, arg4) ->
+      @currentTransitions[msgName]?.call @, arg1, arg2, arg3, arg4
+
+   update: (t) ->
+      @currentState(t)
+
+   @state: (fn) ->
+      parts = for n,v of fn when n isnt 'messages'
+         v.messages = fn.messages
+         @::["state_"+n] = v
 
 class EconSim extends SimActor
   constructor: (baseCount) ->
@@ -11,21 +28,37 @@ class EconSim extends SimActor
 
 
 class Base extends SimActor
-  constructor: (workerCount, mineralPatchCount) ->
-    @workers = (new Worker for i in [1..workerCount])
+  constructor: (mineralPatchCount = 8, gasGyserCount = 2) ->
+    @workers
     @mins = (new MineralPatch for i in [1..mineralPatchCount])
+
+  getMostAvailableMinPatch: ->
+    @mins = _.sortBy @mins, (m) -> m.workers.length
+    @mins[0]
 
 
 class MineralPatch extends SimActor
   constructor: (startingAmt) ->
     @amt = startingAmt || 100
     @workers = []
+    @switchStateTo 'default'
+    @workerMining = null
 
-  msg_attachWorker: (worker) ->
-    @workers.push worker
+  isAvailable: ->
+    @workerMining == null 
 
-  msg_mineralsHarvested: (amtHarvested) ->
-    @amt -= amtHarvested
+  @state
+    default: -> =>
+    messages:
+      attachWorker: (worker) ->
+        @workers.push worker
+
+      mineralsHarvested: (amtHarvested) ->
+        @amt -= amtHarvested
+
+      workerStartedMining: (worker) ->
+        @workerMining = worker
+
 
 
 class Worker extends SimActor
@@ -34,13 +67,44 @@ class Worker extends SimActor
     @t_toPatch = 10
     @t_mine = 5
     @collectAmt = 5
-    @state = @state_atBase()
+    @switchStateTo 'created'
 
-  update: (t) ->
-    @state(t)
+  @state
+    created: (t) -> (t) =>
+    messages:
+      gatherMinerals: (base) ->
+        @base = base
+        @say 'gatherFromMinPatch', base.getMostAvailableMinPatch()
 
-  state_atBase: (t) ->
+      gatherFromMinPatch: (minPatch) ->
+        minPatch.say 'attachWorker', @
+        @switchStateTo 'travelingToMinPatch', minPatch
+  
+  @state
+    mining: (minPatch) ->
+      minPatch.say 'workerStartedMining', @
+      miningTimeLeft = @t_mine
+      (t) =>
+        miningTimeLeft--
 
+  @state
+    waitingToMine: (minPatch) -> (t) ->
+      if minPatch.isAvailable()
+        @switchStateTo 'mining', minPatch
+
+  @state
+    travelingToMinPatch: (minPatch) ->
+      travelTimeLeft = @t_toPatch
+      (t) =>
+        travelTimeLeft--
+        if travelTimeLeft < 0 then @say 'arrivedAtMinPatch', minPatch
+
+    messages:
+      arrivedAtMinPatch: (minPatch) ->
+        if minPatch.isAvailable()
+          @switchStateTo 'mining', minPatch
+        else
+          @switchStateTo 'waitingToMine', minPatch
 
 #exports
 root = exports ? window  
