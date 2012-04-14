@@ -38,6 +38,7 @@ class Base extends SimActor
     @workers
     @mins = (new MineralPatch(@) for i in [1..mineralPatchCount])
 
+
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.workers.length
     @mins[0]
@@ -57,7 +58,7 @@ class MineralPatch extends SimActor
   @state
     default: -> =>
     messages:
-      attachWorker: (wrkr) ->
+      workerArrived: (wrkr) ->
         @workers.push wrkr
 
       mineralsHarvested: (amtHarvested) ->
@@ -77,45 +78,46 @@ class Worker extends SimActor
     @t_toBase = 10
     @t_toPatch = 10
     @t_mine = 5
+    @targetResource
     @collectAmt = 5
     @switchStateTo 'created'
 
   @state
     created: (t) -> (t) =>
     messages:
-      gatherMinerals: (base) ->
-        @say 'gatherFromMinPatch', base.getMostAvailableMinPatch()
+      gatherMinerals: (minPatch) ->
+        @say 'gatherFromMinPatch', minPatch
 
       gatherFromMinPatch: (minPatch) ->
-        minPatch.say 'attachWorker', @
-        @switchStateTo 'travelingToMinPatch', minPatch
+        @targetResource = minPatch
+        @switchStateTo 'travelingToMinPatch'
   
   @state
-    mining: (minPatch) ->
-      minPatch.say 'workerStartedMining', @
-      @sayAfter @t_mine, 'finishedMining', minPatch
+    mining: ->
+      @targetResource.say 'workerStartedMining', @
+      @sayAfter @t_mine, 'finishedMining'
     
     messages:
-      finishedMining: (minPatch) ->
-        minPatch.say 'workerFinishedMiningXminerals', @, @collectAmt
-        @switchStateTo 'returningMinsToBase', minPatch.base 
-
-
-  @state
-    waitingToMine: (minPatch) -> (t) ->
-      if minPatch.isAvailable()
-        @switchStateTo 'mining', minPatch
+      finishedMining: ->
+        @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
+        @switchStateTo 'returningMinsToBase', @targetResource.base 
 
   @state
-    travelingToMinPatch: (minPatch) ->
-      @sayAfter @t_toPatch, 'arrivedAtMinPatch', minPatch
+    waitingToMine: -> (t) ->
+      if @targetResource.isAvailable()
+        @switchStateTo 'mining' 
+
+  @state
+    travelingToMinPatch: ->
+      @sayAfter @t_toPatch, 'arrivedAtMinPatch'
 
     messages:
-      arrivedAtMinPatch: (minPatch) ->
-        if minPatch.isAvailable()
-          @switchStateTo 'mining', minPatch
+      arrivedAtMinPatch: ->
+        @targetResource.say 'workerArrived', @
+        if @targetResource.isAvailable()
+          @switchStateTo 'mining'
         else
-          @switchStateTo 'waitingToMine', minPatch
+          @switchStateTo 'waitingToMine'
 
   @state
     returningMinsToBase: (base) ->

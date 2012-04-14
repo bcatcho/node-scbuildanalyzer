@@ -12,7 +12,7 @@ class TBase extends econ.Base
 
    addXworkersToEachMinPatch: (x) ->
       @mins.forEach (m) => 
-         m.say 'attachWorker', util.Wrkr() for i in [1..x]
+         m.say 'workerArrived', util.Wrkr() for i in [1..x]
          m.say 'workerStartedMining', m.workers[0]
 
 util = 
@@ -36,7 +36,7 @@ describe 'EconSim::MineralPatch', ->
 
    it 'attaches new workers that target it via event', ->
       min = new econ.MineralPatch
-      min.say 'attachWorker', util.Wrkr()
+      min.say 'workerArrived', util.Wrkr()
       min.workers.length.should.equal 1
 
    it 'subtract minerals on mineralsHarvested event', ->
@@ -45,37 +45,41 @@ describe 'EconSim::MineralPatch', ->
       min.say 'mineralsHarvested', 5
       min.amt.should.equal expectedAmt
 
-   it 'shouldn\'t add workers to queue until they are waiting to mine?', ->
-      min.workers.lenght.should.equal -1
+      it 'should add workers to queue only when they are waiting to mine', ->
+      min = new econ.MineralPatch
+      min.workers.length.should.equal -1
 
-describe 'EconSim::Worker', ->
-   describe 'when created and told to gather minerals', ->
-      wrkr = util.Wrkr()
-      base = util.FullBase()
-      minPatch = base.removeXWorkersFromRandomPatch 2
-      minPatchOriginalAmt = minPatch.amt
-      wrkr.say 'gatherMinerals', base
 
-      it 'should attach to the best mineral patch', ->
-         minPatch.workers.should.include wrkr
+describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
+   wrkr = util.Wrkr()
+   base = util.FullBase()
+   minPatch = base.removeXWorkersFromRandomPatch 2
+   minPatchOriginalAmt = minPatch.amt
+   wrkr.say 'gatherMinerals', minPatch 
 
-      it 'should start traveling to said patch', ->
+   describe 'first', ->
+      it 'will target the patch specificied by the base', ->
+         wrkr.targetResource.should.equal minPatch
+      
+      it 'then should start traveling to said patch', ->
          wrkr.stateName.should.equal 'travelingToMinPatch'
 
-      it 'should take the right amount of time to get there', ->
+      it 'and should take the right amount of time to get there', ->
          travelTime = wrkr.t_toPatch
          wrkr.update() for i in [0..travelTime]
          ['mining', 'waitingToMine'].should.include wrkr.stateName
 
-      it 'should be waiting to mine if a worker is already there', ->
+   describe 'once it arrives at the patch', ->
+      it 'will wait to mine if a worker is already there', ->
          wrkr.stateName.should.equal 'waitingToMine'
 
-      it 'should start mining once the last worker has finished', ->
+      it 'and will start mining once the last worker has finished', ->
          minPatch.workerMining = null 
          wrkr.update()
-         wrkr.stateName.should.equal 'mining'
-
-      it 'should start traveling back to base once the mining time is up', ->
+         expect(wrkr.stateName).to.equal 'mining'
+  
+   describe 'then once the mining time is up', ->
+      it 'will start traveling back to base once the mining time is up', ->
          travelTime = wrkr.t_mine
          wrkr.update() for i in [0..travelTime]
          wrkr.stateName.should.equal 'returningMinsToBase'
@@ -83,7 +87,7 @@ describe 'EconSim::Worker', ->
       it 'should have removed the correct amount of minerals from the mineral patch', ->
          minPatch.amt.should.equal minPatchOriginalAmt - wrkr.collectAmt
 
-      it 'should have been added to the back of the mineral\'s worker pool', ->
+      it 'should be added to the back of the mineral\'s worker pool', ->
          _(minPatch.workers).last().should.eql wrkr
 
 
