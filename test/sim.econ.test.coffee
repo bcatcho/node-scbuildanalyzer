@@ -1,8 +1,16 @@
 chai = require 'chai'
-_ = require 'underscore'
 chai.should()
 expect = chai.expect
-econ = require '../coffee/sim.econ.coffee'
+common = require '../coffee/sim.common.coffee'
+econ = require '../coffee/sim.econ.coffee' 
+require 'underscore'
+
+
+
+logger = new common.SimEventLog
+logger.watchFor ['depositMinerals']
+
+common.SimSingletons.register common.SimEventLog, logger
 
 class TBase extends econ.Base
    removeXWorkersFromRandomPatch: (x) ->
@@ -45,11 +53,6 @@ describe 'EconSim::MineralPatch', ->
       min.say 'mineralsHarvested', 5
       min.amt.should.equal expectedAmt
 
-      it 'should add workers to queue only when they are waiting to mine', ->
-      min = new econ.MineralPatch
-      min.workers.length.should.equal -1
-
-
 describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
    wrkr = util.Wrkr()
    base = util.FullBase()
@@ -87,8 +90,26 @@ describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
       it 'should have removed the correct amount of minerals from the mineral patch', ->
          minPatch.amt.should.equal minPatchOriginalAmt - wrkr.collectAmt
 
-      it 'should be added to the back of the mineral\'s worker pool', ->
-         _(minPatch.workers).last().should.eql wrkr
+      it 'should be removed from the mineral\'s worker queueu', ->
+         minPatch.workers.should.not.include wrkr
 
+      it 'should take the right amount of time to get there', ->
+         wrkr.update() for i in [0..wrkr.t_toBase]
+         wrkr.stateName.should.equal 'depositingMineralsToBase'
 
+   describe 'when it arrives at the base', ->
+      it 'will deposite the right amount of minerals to the base', ->
+         originalBaseMineralAmt = minPatch.base.mineralAmt
+         wrkr.update()
+         minPatch.base.mineralAmt.should.equal (originalBaseMineralAmt + wrkr.collectAmt)
+
+      it 'then goes back to the same mineral patch', ->
+         wrkr.update()
+         wrkr.stateName.should.equal 'travelingToMinPatch'
+         wrkr.targetResource.should.equal minPatch
+
+   describe 'all the while, the event logger', ->
+      it "should have heard about the base's new minerals", ->
+         logger.events['depositMinerals'].length.should.equal 1
          
+
