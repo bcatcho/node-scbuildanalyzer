@@ -3,27 +3,65 @@ _ = require 'underscore'
 common = require './sim.common.coffee'
 
 class EconSim extends common.SimActor
-   constructor: (baseCount) ->
-     @bases = (new Base for i in [1..baseCount])
+   constructor: ->
+     @subActors = []
+     super()
 
+   createActor: (actr, a, b, c, d) ->
+      instance = new actr a,b,c,d
+      instance.sim = @
+      @subActors.push(instance)
+      instance.instantiate?()
+      instance
 
-class Base extends common.SimActor
-   constructor: (mineralPatchCount = 8, gasGyserCount = 2) ->
-     @workers
-     @mins = (new MineralPatch(@) for i in [1..mineralPatchCount])
-     @mineralAmt = 0
-     @switchStateTo 'default'
-     super
-
-   getMostAvailableMinPatch: ->
-     @mins = _.sortBy @mins, (m) -> m.workers.length
-     @mins[0]
-   
    @state
       default: -> ->
       messages:
+         start: -> @switchStateTo 'running'
+
+   @state
+      running: -> 
+         (t) ->
+            @time.step()
+            actr.update(@time.tick) for actr in @subActors
+
+class Base extends common.SimActor
+   constructor: (mineralPatchCount = 8, gasGyserCount = 2) ->
+      @workers
+      @mineralAmt = 0
+      @mins = []
+      @rallyResource = @mins[0]
+      @t_buildWorker = 5
+      @buildQueue = []
+      @sim
+      super()
+
+   instantiate: ->
+      @mins = (@sim.createActor(MineralPatch, @) for i in [1..8])
+      @rallyResource = @mins[0]
+
+   updateBuildQueue: ->
+      if @buildQueue.length > 0
+         thingBuilding = @buildQueue[0]
+         if @isExpired @t_buildWorker - (@time.tick - thingBuilding.startTime)
+            thing = @sim.createActor thingBuilding.thing
+            thing.say 'gatherFromMinPatch', @rallyResource
+            @buildQueue = _(@buildQueue).rest()
+
+   getMostAvailableMinPatch: ->
+      @mins = _.sortBy @mins, (m) -> m.workers.length
+      @mins[0]
+   
+   @state
+      default: -> ->
+         @updateBuildQueue()
+
+      messages:
          depositMinerals: (minAmt) ->
             @mineralAmt += minAmt
+
+         buildNewWorker: ->
+            @buildQueue.push({startTime: @time.tick , thing: Worker})
 
 
 class MineralPatch extends common.SimActor
@@ -31,9 +69,8 @@ class MineralPatch extends common.SimActor
      @amt = startingAmt 
      @base = base
      @workers = [] 
-     @switchStateTo 'default'
      @workerMining = null
-     super
+     super()
 
    isAvailable: ->
      @workerMining == null 
@@ -58,67 +95,69 @@ class MineralPatch extends common.SimActor
 
 class Worker extends common.SimActor
    constructor: ->
-     @t_toBase = 10
-     @t_toPatch = 10
-     @t_mine = 5
-     @targetResource
-     @collectAmt = 5
-     @switchStateTo 'created'
-     super
+      @t_toBase = 3
+      @t_toPatch = 3
+      @t_mine = 3
+      @targetResource
+      @collectAmt = 5
+      super 'idle'
 
    @state
-     created: (t) -> (t) =>
+     idle: (t) -> (t) =>
      messages:
        gatherMinerals: (minPatch) ->
          @say 'gatherFromMinPatch', minPatch
 
        gatherFromMinPatch: (minPatch) ->
          @targetResource = minPatch
-         @switchStateTo 'travelingToMinPatch'
+         @switchStateTo 'approachResource'
    
    @state
-     mining: ->
-       @targetResource.say 'workerStartedMining', @
-       @sayAfter @t_mine, 'finishedMining'
-     
-     messages:
-       finishedMining: ->
-         @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
-         @switchStateTo 'returningMinsToBase', @targetResource.base 
-
-   @state
-     waitingToMine: -> (t) ->
-       if @targetResource.isAvailable()
-         @switchStateTo 'mining' 
-
-   @state
-     travelingToMinPatch: ->
-       @sayAfter @t_toPatch, 'arrivedAtMinPatch'
+     approachResource: ->
+        @sayAfter @t_toPatch, 'arrivedAtMinPatch'
 
      messages:
        arrivedAtMinPatch: ->
          @targetResource.say 'workerArrived', @
-         if @targetResource.isAvailable()
-            @switchStateTo 'mining'
-         else
-            @switchStateTo 'waitingToMine'
+         @switchStateTo 'waitAtResource'
 
    @state
-     returningMinsToBase: (base) ->
+      waitAtResource: -> ->
+         @switchStateTo 'harvest' if @targetResource.isAvailable()
+
+      enterState: ->
+         @switchStateTo 'harvest' if @targetResource.isAvailable()
+
+   @state
+      harvest: ->
+         @sayAfter @t_mine, 'finishedMining'
+
+      enterState: -> 
+         @targetResource.say 'workerStartedMining', @
+
+      messages:
+         finishedMining: ->
+            @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
+            @switchStateTo 'approachDropOff', @targetResource.base 
+
+   @state
+     approachDropOff: (base) ->
        @sayAfter @t_toBase, 'arrivedAtBase', base 
 
      messages:
        arrivedAtBase: (base) ->
-          @switchStateTo 'depositingMineralsToBase', base
+          @switchStateTo 'dropOff', base
 
    @state
-     depositingMineralsToBase: (base) -> (t) ->
-        base.say 'depositMinerals', @collectAmt
-        @say 'finishedDepositingMineralsToBase', base
+      dropOff: -> ->
 
-     messages:
-        finishedDepositingMineralsToBase: (base) ->
-            @switchStateTo 'travelingToMinPatch'
+      enterState: (base) ->
+         base.say 'depositMinerals', @collectAmt
+         @say 'finishedDropOff', base
+
+      messages:
+         finishedDropOff: (base) ->
+            @switchStateTo 'approachResource'
 
         
 

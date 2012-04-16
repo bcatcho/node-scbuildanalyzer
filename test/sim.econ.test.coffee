@@ -3,16 +3,16 @@ chai.should()
 expect = chai.expect
 common = require '../coffee/sim.common.coffee'
 econ = require '../coffee/sim.econ.coffee' 
-require 'underscore'
+_ = require 'underscore'
 
-
-
-logger = new common.SimEventLog
-logger.watchFor ['depositMinerals']
-
-common.SimSingletons.register common.SimEventLog, logger
+logger = common.SimSingletons.register common.SimEventLog
+logger.watchFor ["depositMinerals", "workerStartedMining"]
+time = common.SimSingletons.register common.SimTimer
 
 class TBase extends econ.Base
+   constructor: ->
+      super
+
    removeXWorkersFromRandomPatch: (x) ->
       patch = Math.round( Math.random() *( @mins.length - 1))
       @mins[patch].workers.pop() for i in [1..x]
@@ -26,18 +26,58 @@ class TBase extends econ.Base
 util = 
    Wrkr: -> new econ.Worker
    Min: -> new econ.MineralPatch
-   Base: -> new TBase
+   Base: -> 
+      b = new TBase
+      b.instantiate()
+      b
    FullBase: ->
       b = util.Base()
       b.addXworkersToEachMinPatch 2
       b
 
-describe 'EconSim', ->
-   it 'sets up', ->
-      sim = new econ.EconSim 6
-      sim.bases.length.should.equal 6 
+describe 'EconSim with one base', ->
+   before -> 
+      logger.clear()
+      time.reset()
+   sim = new econ.EconSim
+   base = null
+
+   describe 'When told to create a new EconSim::Base', ->
+      base = sim.createActor econ.Base
+
+      it 'should have a new EconSim::Base subActor', ->
+         _(sim.subActors).first().should.be.an.instanceOf(econ.Base)
+
+   describe 'When told to start', ->
+      it 'should change state to running', ->
+         sim.say 'start'
+         sim.stateName.should.equal 'running'
+
+      it 'should be at tick count = 0', ->
+         sim.time.tick.should.equal 0
+
+   describe 'When the base creates a new worker', ->
+      base.say 'buildNewWorker'
+      
+      it 'should _not yet_ have another subActor that is a EconSim::Worker', ->
+         _(sim.subActors).any((a) -> a instanceof(econ.Worker)).should.equal false
+
+      it 'but after updating for the length of the build time it should have a Worker subActor', ->
+         sim.update() for i in [1..base.t_buildWorker]
+         _(sim.subActors).any((a) -> a instanceof(econ.Worker)).should.equal true
+      
+      it 'should have taken the right amount of time', ->
+         sim.time.tick.should.equal 5
+
+      it 'the base should receive minerals after some time', ->
+         sim.update() for i in [0..200]
+         base.mineralAmt.should.be.above 0
 
 describe 'EconSim::MineralPatch', ->
+   before -> 
+      logger.clear()
+      time.reset()
+
    it 'sets up', ->
       min = new econ.MineralPatch
       min.amt.should.be.a 'number'
@@ -54,8 +94,14 @@ describe 'EconSim::MineralPatch', ->
       min.amt.should.equal expectedAmt
 
 describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
-   wrkr = util.Wrkr()
-   base = util.FullBase()
+   before ->
+      logger.clear()
+      time.reset()
+
+   sim = new econ.EconSim()
+   sim.say 'start'
+   wrkr = sim.createActor econ.Worker
+   base = sim.createActor TBase
    minPatch = base.removeXWorkersFromRandomPatch 2
    minPatchOriginalAmt = minPatch.amt
    wrkr.say 'gatherMinerals', minPatch 
@@ -65,27 +111,21 @@ describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
          wrkr.targetResource.should.equal minPatch
       
       it 'then should start traveling to said patch', ->
-         wrkr.stateName.should.equal 'travelingToMinPatch'
+         wrkr.stateName.should.equal 'approachResource'
 
       it 'and should take the right amount of time to get there', ->
          travelTime = wrkr.t_toPatch
-         wrkr.update() for i in [0..travelTime]
-         ['mining', 'waitingToMine'].should.include wrkr.stateName
+         sim.update() for i in [0..travelTime]
+         wrkr.stateName.should.not.equal 'approachResource'
 
-   describe 'once it arrives at the patch', ->
-      it 'will wait to mine if a worker is already there', ->
-         wrkr.stateName.should.equal 'waitingToMine'
-
-      it 'and will start mining once the last worker has finished', ->
-         minPatch.workerMining = null 
-         wrkr.update()
-         expect(wrkr.stateName).to.equal 'mining'
+      it 'it should immediately start to mine', ->
+         wrkr.stateName.should.equal 'harvest'
   
    describe 'then once the mining time is up', ->
       it 'will start traveling back to base once the mining time is up', ->
          travelTime = wrkr.t_mine
-         wrkr.update() for i in [0..travelTime]
-         wrkr.stateName.should.equal 'returningMinsToBase'
+         sim.update() for i in [0..travelTime]
+         wrkr.stateName.should.equal 'approachDropOff'
 
       it 'should have removed the correct amount of minerals from the mineral patch', ->
          minPatch.amt.should.equal minPatchOriginalAmt - wrkr.collectAmt
@@ -94,18 +134,15 @@ describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
          minPatch.workers.should.not.include wrkr
 
       it 'should take the right amount of time to get there', ->
-         wrkr.update() for i in [0..wrkr.t_toBase]
-         wrkr.stateName.should.equal 'depositingMineralsToBase'
+         sim.update() for i in [0..wrkr.t_toBase]
+         wrkr.stateName.should.equal 'approachResource'
 
    describe 'when it arrives at the base', ->
       it 'will deposite the right amount of minerals to the base', ->
-         originalBaseMineralAmt = minPatch.base.mineralAmt
-         wrkr.update()
-         minPatch.base.mineralAmt.should.equal (originalBaseMineralAmt + wrkr.collectAmt)
+         minPatch.base.mineralAmt.should.equal wrkr.collectAmt
 
       it 'then goes back to the same mineral patch', ->
-         wrkr.update()
-         wrkr.stateName.should.equal 'travelingToMinPatch'
+         wrkr.stateName.should.equal 'approachResource'
          wrkr.targetResource.should.equal minPatch
 
    describe 'all the while, the event logger', ->
