@@ -1,41 +1,19 @@
 chai = require 'chai'
-chai.should()
-expect = chai.expect
 common = require '../coffee/sim.common.coffee'
 econ = require '../coffee/sim.econ.coffee'
 _ = require 'underscore'
 
+# setup chai
+chai.should()
+expect = chai.expect
+
+# set up dependencies
 logger = common.SimSingletons.register common.SimEventLog
 logger.watchFor ["depositMinerals", "workerStartedMining"]
 time = common.SimSingletons.register common.SimTimer
 
-class TBase extends econ.Base
-  constructor: ->
-    super
-
-  removeXWorkersFromRandomPatch: (x) ->
-    patch = Math.round( Math.random() *( @mins.length - 1))
-    @mins[patch].workers.pop() for i in [1..x]
-    @mins[patch]
-
-  addXworkersToEachMinPatch: (x) ->
-    @mins.forEach (m) =>
-      m.say 'workerArrived', util.Wrkr() for i in [1..x]
-      m.say 'workerStartedMining', m.workers[0]
-
-util =
-  Wrkr: -> new econ.Worker
-  Min: -> new econ.MineralPatch
-  Base: ->
-    b = new TBase
-    b.instantiate()
-    b
-  FullBase: ->
-    b = util.Base()
-    b.addXworkersToEachMinPatch 2
-    b
-
-describe 'EconSim with one base', ->
+#tests
+describe 'EconSim with one base one worker', ->
   before ->
     logger.clear()
     time.reset()
@@ -46,8 +24,8 @@ describe 'EconSim with one base', ->
     base = sim.createActor econ.Base
 
     it 'should have a new EconSim::Base subActor', ->
-      _(sim.subActors).first().should.be.an.instanceOf(econ.Base)
-
+      _(sim.subActors).containsInstanceOf(econ.Base).should.equal true
+    
   describe 'When told to start', ->
     it 'should change state to running', ->
       sim.say 'start'
@@ -60,20 +38,42 @@ describe 'EconSim with one base', ->
     base.say 'buildNewWorker'
 
     it 'should _not yet_ have another subActor that is a EconSim::Worker', ->
-      _(sim.subActors).any((a) -> a instanceof(econ.Worker)).should.equal false
+      _(sim.subActors).containsInstanceOf(econ.Worker).should.equal false
 
     it 'but after update(build time) it should have a Worker subActor', ->
       sim.update() for i in [1..base.t_buildWorker]
-      _(sim.subActors).any((a) -> a instanceof(econ.Worker)).should.equal true
-
-    it 'should have taken the right amount of time', ->
-      sim.time.tick.should.equal 5
+      _(sim.subActors).containsInstanceOf(econ.Worker).should.equal true
 
     it 'the base should receive minerals after some time', ->
-      sim.update() for i in [0..200]
+      sim.update() for i in [1..50]
       base.mineralAmt.should.be.above 0
 
-describe 'EconSim::MineralPatch', ->
+describe 'EconSim with one base and two workers', ->
+  before ->
+    logger.clear()
+    logger.fwatchFor 'gatherFromMinPatch', (min) -> min[1].simId
+    time.reset()
+
+  sim = new econ.EconSim
+  sim.say 'start'
+  base = sim.createActor econ.Base
+
+  it 'should queue up two workers at base', ->
+    base.say 'buildNewWorker'
+    base.say 'buildNewWorker'
+    sim.update()
+    base.buildQueue.length.should.equal 2
+
+  it 'will make the first worker harvest while the 2nd builds', ->
+    sim.update() while base.buildQueue.length > 0
+    base.mineralAmt.should.be.above 0
+
+  it 'will distribute the workers amongst two mineral patches', ->
+    #update until both patches are targeted
+    logger.event('gatherFromMinPatch').length.should.equal 2
+    #update unti one worker switches patches
+
+describe 'MineralPatch', ->
   before ->
     logger.clear()
     time.reset()
@@ -84,7 +84,7 @@ describe 'EconSim::MineralPatch', ->
 
   it 'attaches new workers that target it via event', ->
     min = new econ.MineralPatch
-    min.say 'workerArrived', util.Wrkr()
+    min.say 'workerArrived', new econ.Worker
     min.workers.length.should.equal 1
 
   it 'subtract minerals on mineralsHarvested event', ->
@@ -93,7 +93,7 @@ describe 'EconSim::MineralPatch', ->
     min.say 'mineralsHarvested', 5
     min.amt.should.equal expectedAmt
 
-describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
+describe 'Worker.gatherResource()', ->
   before ->
     logger.clear()
     time.reset()
@@ -101,8 +101,8 @@ describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
   sim = new econ.EconSim()
   sim.say 'start'
   wrkr = sim.createActor econ.Worker
-  base = sim.createActor TBase
-  minPatch = base.removeXWorkersFromRandomPatch 2
+  base = sim.createActor econ.Base
+  minPatch = base.getMostAvailableMinPatch()
   minPatchOriginalAmt = minPatch.amt
   wrkr.say 'gatherMinerals', minPatch
 
@@ -147,5 +147,5 @@ describe 'When a new Worker is told to gather from an empty Mineral Patch', ->
 
   describe 'all the while, the event logger', ->
     it "should have heard about the base's new minerals", ->
-      logger.events['depositMinerals'].length.should.equal 1
+      logger.event('depositMinerals').length.should.equal 1
 

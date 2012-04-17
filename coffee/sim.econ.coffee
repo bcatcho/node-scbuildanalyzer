@@ -4,32 +4,38 @@ common = require './sim.common.coffee'
 
 class EconSim extends common.SimActor
   constructor: ->
-    @subActors = []
+    @subActors = {}
     super()
 
   createActor: (actr, a, b, c, d) ->
     instance = new actr a,b,c,d
     instance.sim = @
-    @subActors.push(instance)
+    instance.simId = _.uniqueId()
+    @subActors[instance.simId] = instance
     instance.instantiate?()
     instance
 
-  @state
-    default: -> ->
+  getActor: (simId) ->
+    return @subActors[simId]
+
+  @defaultState
+    update: @noopUpdate
+
     messages:
       start: -> @switchStateTo 'running'
 
-  @state
-    running: -> (t) ->
+  @state "running"
+    update: -> (t) ->
       @time.step()
-      actr.update(@time.tick) for actr in @subActors
+      @subActors[actr].update(@time.tick) for actr of @subActors
+
 
 class Base extends common.SimActor
   constructor: ->
     @mineralAmt = 0
     @mins = []
     @rallyResource = @mins[0]
-    @t_buildWorker = 5
+    @t_buildWorker = 17
     @buildQueue = []
     super()
 
@@ -43,14 +49,17 @@ class Base extends common.SimActor
       if @isExpired @t_buildWorker - (@time.tick - thingBuilding.startTime)
         thing = @sim.createActor thingBuilding.thing
         thing.say 'gatherFromMinPatch', @rallyResource
-        @buildQueue = _(@buildQueue).rest()
+        @buildQueue = @buildQueue[1..]
+        if @buildQueue.length > 0
+          @buildQueue[0].startTime = @time.tick
+        
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.workers.length
     @mins[0]
 
-  @state
-    default: -> ->
+  @defaultState
+    update: -> ->
       @updateBuildQueue()
 
     messages:
@@ -72,8 +81,9 @@ class MineralPatch extends common.SimActor
   isAvailable: ->
     @workerMining == null
 
-  @state
-    default: -> =>
+  @defaultState
+    update: @noopUpdate
+
     messages:
       workerArrived: (wrkr) ->
         @workers.push wrkr
@@ -99,8 +109,9 @@ class Worker extends common.SimActor
     @collectAmt = 5
     super 'idle'
 
-  @state
-    idle: (t) -> (t) =>
+  @state "idle"
+    update: @noopUpdate
+
     messages:
       gatherMinerals: (minPatch) ->
         @say 'gatherFromMinPatch', minPatch
@@ -109,8 +120,8 @@ class Worker extends common.SimActor
         @targetResource = minPatch
         @switchStateTo 'approachResource'
 
-  @state
-    approachResource: ->
+  @state "approachResource"
+    update: ->
       @sayAfter @t_toPatch, 'arrivedAtMinPatch'
 
     messages:
@@ -118,15 +129,15 @@ class Worker extends common.SimActor
         @targetResource.say 'workerArrived', @
         @switchStateTo 'waitAtResource'
 
-  @state
-    waitAtResource: -> ->
+  @state "waitAtResource"
+    update: -> ->
       @switchStateTo 'harvest' if @targetResource.isAvailable()
 
     enterState: ->
       @switchStateTo 'harvest' if @targetResource.isAvailable()
 
-  @state
-    harvest: ->
+  @state "harvest"
+    update: ->
       @sayAfter @t_mine, 'finishedMining'
 
     enterState: ->
@@ -137,16 +148,16 @@ class Worker extends common.SimActor
         @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
         @switchStateTo 'approachDropOff', @targetResource.base
 
-  @state
-    approachDropOff: (base) ->
+  @state "approachDropOff"
+    update: (base) ->
       @sayAfter @t_toBase, 'arrivedAtBase', base
 
     messages:
       arrivedAtBase: (base) ->
         @switchStateTo 'dropOff', base
 
-  @state
-    dropOff: -> ->
+  @state "dropOff"
+    update: @noopUpdate
 
     enterState: (base) ->
       base.say 'depositMinerals', @collectAmt

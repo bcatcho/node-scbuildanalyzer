@@ -5,6 +5,10 @@ _.mixin
   rot: (arr, num=1) ->
     @rest(arr, num).concat @first(arr, num)
 
+  containsInstanceOf: (collection, theType) ->
+    if _(collection).isObject() then collection = _(collection).values()
+    _(collection).any (i) -> i instanceof(theType)
+
 class SimSingletons
   @dependency = {}
   @register: (proto, instance) ->
@@ -21,17 +25,27 @@ class SimEventLog
     @events = {}
     @eventsToCollect = {}
 
+  event: (eventName, filter) ->
+    # TODO impliment filter
+    @events[eventName] ? []
+
   watchFor: (eventNames) ->
     for e in eventNames
-      @eventsToCollect[e] = true
+      @eventsToCollect[e] = (args) -> args
       @events[e] = []
 
+  fwatchFor: (event, formatter) ->
+    @eventsToCollect[event] = formatter ? (args) -> args
+    @events[event] ?= []
+
   log: (eventName, args...) ->
-    @events[eventName].push(args) if @eventsToCollect[eventName]
+    formatter = @eventsToCollect[eventName]
+    @events[eventName].push(formatter(args)) if formatter
 
   clear: ->
     @events = {}
     @watchFor _(@eventsToCollect).keys()
+
 
 class SimTimer
   constructor: ->
@@ -56,10 +70,10 @@ class SimActor
 
   switchStateTo: (sn,a,b,c,d) ->
     @stateName = sn
-    @currentState = @["state_#{@stateName}"] a,b,c,d
+    @currentState = @["state_#{@stateName}"].update.call @, a,b,c,d
     @currentTransitions = @["state_#{@stateName}"].messages
     @["state_#{@stateName}"].enterState?.call @, a, b, c, d
-  
+
   say: (msgName, a, b, c, d) ->
     @logger?.log msgName, @time.tick, a, b, c, d
     @currentTransitions[msgName]?.call @, a, b, c, d
@@ -67,16 +81,20 @@ class SimActor
   update: (t) ->
     @currentState(t)
 
-  @state: (fn) ->
-    parts = for n,v of fn when n isnt 'messages'
-      v.messages = fn.messages
-      v.enterState = fn.enterState
-      @::["state_"+n] = v
-  
+  @state: (args...) ->
+    @::["state_#{args[0]}"] = args[1]
+
+  @defaultState: (obj) ->
+    @::["state_default"] = obj
+
   isExpired: (t) -> t <= 0
 
   sayAfter: (timeSpan, a, b, c, d) ->
     (t) -> @say(a,b,c,d) if @isExpired timeSpan--
+
+  # convienience method for states with no update loop
+  @noopUpdate: -> ->
+
 
 root.SimSingletons = SimSingletons
 root.SimEventLog = SimEventLog
