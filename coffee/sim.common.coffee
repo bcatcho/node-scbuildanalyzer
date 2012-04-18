@@ -37,7 +37,7 @@ class SimEventLog
       @events[e] = []
 
   fwatchFor: (eventName, formatter) ->
-    @eventsToCollect[eventName] = formatter ? @defaultFormatter 
+    @eventsToCollect[eventName] = formatter ? @defaultFormatter
     @events[eventName] ?= []
 
   log: (e) ->
@@ -51,7 +51,7 @@ class SimEventLog
   eventOccurs: (eventName, timeOut, condition) ->
     # eg. do.Something() until logger.eventOccurs()
     # TODO : condition
-    if not @events[eventName] 
+    if not @events[eventName]
       @watchFor(eventName)
     @event(eventName).length > 0 or timeOut < 0
 
@@ -84,7 +84,7 @@ class SimActor
     @["state_#{@stateName}"].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
-    @logger?.log 
+    @logger?.log
       eventName: msgName
       eventTime: @time.tick
       simId: @simId

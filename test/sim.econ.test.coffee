@@ -50,7 +50,8 @@ describe 'EconSim with one base one worker', ->
 describe 'EconSim with one base and two workers', ->
   before ->
     logger.clear()
-    logger.fwatchFor 'workerStartedMining', (e) -> "#{e.simId}-#{e.args[0].simId}" #0 is time
+    logger.fwatchFor 'workerStartedMining',
+      (e) -> "#{e.simId}-#{e.args[0].simId}"
     time.reset()
 
   sim = new econ.EconSim

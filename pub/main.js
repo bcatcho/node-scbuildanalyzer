@@ -13,7 +13,7 @@ function RunSim() {
 			g: gas
 		};
 	}
-  
+
 	function addWorker(time) {
 		state.workers += 1;
 		state.nextWorkerBuildTime = time + stats.probe.buildTime;
@@ -76,7 +76,7 @@ function RunSim() {
 			if (Math.floor((Math.random() * 1) + 1) == 1) {
 				addWorker(t);
 			}
-      // add a marker every 28 workers
+			// add a marker every 28 workers
 			if (state.workers % 26 == 0) {
 				markings.push({
 					xaxis: {
@@ -96,8 +96,8 @@ function RunSim() {
 
 		var minPerSec = twoWorkerRate + thirdWorkerRate;
 		state.totalMin += minPerSec;
-		
-    data[1].push([currentTime, state.totalMin]);
+
+		data[1].push([currentTime, state.totalMin]);
 		data[0].push([currentTime, minPerSec * 200]);
 	}
 
