@@ -31,14 +31,17 @@ class SimEventLog
     # TODO impliment filter
     @events[eventName] ? []
 
-  watchFor: (eventNames) ->
-    for e in eventNames
+  watchFor: (events) ->
+    for e in events
       @eventsToCollect[e] = @defaultFormatter
       @events[e] = []
 
   fwatchFor: (eventName, formatter) ->
     @eventsToCollect[eventName] = formatter ? @defaultFormatter
     @events[eventName] ?= []
+
+  isTrackingEvent: (eventName) ->
+    @eventsToCollect[eventName] isnt undefined
 
   log: (e) ->
     formatter = @eventsToCollect[e.eventName]
@@ -51,9 +54,14 @@ class SimEventLog
   eventOccurs: (eventName, timeOut, condition) ->
     # eg. do.Something() until logger.eventOccurs()
     # TODO : condition
-    if not @events[eventName]
-      @watchFor(eventName)
-    @event(eventName).length > 0 or timeOut < 0
+    @fwatchFor eventName unless @isTrackingEvent(eventName)
+    if @event(eventName).length > 0
+      if condition isnt undefined
+        condition(@event(eventName)) or timeOut <= 0
+      else
+        true
+    else
+      timeOut <= 0
 
 
 class SimTimer

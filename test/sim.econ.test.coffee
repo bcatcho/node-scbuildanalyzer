@@ -50,8 +50,7 @@ describe 'EconSim with one base one worker', ->
 describe 'EconSim with one base and two workers', ->
   before ->
     logger.clear()
-    logger.fwatchFor 'workerStartedMining',
-      (e) -> "#{e.simId}-#{e.args[0].simId}"
+    logger.fwatchFor 'workerStartedMining', (e) -> "#{e.simId}"
     time.reset()
 
   sim = new econ.EconSim
@@ -71,7 +70,9 @@ describe 'EconSim with one base and two workers', ->
   it 'will distribute the workers amongst two mineral patches', ->
     timeOut = 200
     sim.update() until logger.eventOccurs('workerCanceledHarvest', timeOut--)
+    sim.update() for i in [0..10]
     _(logger.event('workerStartedMining')).unique().length.should.equal 2
+
 
 
 describe 'MineralPatch', ->

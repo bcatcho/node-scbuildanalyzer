@@ -78,6 +78,10 @@ class MineralPatch extends common.SimActor
     @workerMining = null
     super()
 
+  getClosestAvailableResource: ->
+    for m in @base.mins when m isnt @
+      return m if m.isAvailable()
+
   isAvailable: ->
     @workerMining == null
 
@@ -99,12 +103,17 @@ class MineralPatch extends common.SimActor
         @workers = _(@workers).rest()
         @amt -= amtMined
 
+      workerCanceledHarvest: (wrkr) ->
+        @workers = _(@workers).without(wrkr)
+        if @workerMining is wrkr
+          @workerMining = null
+
 
 class Worker extends common.SimActor
   constructor: ->
     @t_toBase = 3
     @t_toPatch = 3
-    @t_mine = 3
+    @t_mine = 4
     @targetResource
     @collectAmt = 5
     super 'idle'
@@ -134,7 +143,17 @@ class Worker extends common.SimActor
       @switchStateTo 'harvest' if @targetResource.isAvailable()
 
     enterState: ->
-      @switchStateTo 'harvest' if @targetResource.isAvailable()
+      if @targetResource.isAvailable()
+        @switchStateTo 'harvest'
+      else
+        nextResource = @targetResource.getClosestAvailableResource()
+        @say 'changeTargetResource', nextResource if nextResource
+
+    messages:
+      changeTargetResource: (newResource) ->
+        @targetResource.say 'workerCanceledHarvest', @
+        @targetResource = newResource
+        @switchStateTo 'approachResource'
 
   @state "harvest"
     update: ->
