@@ -9,7 +9,6 @@ expect = chai.expect
 
 # set up dependencies
 logger = common.SimSingletons.register common.SimEventLog
-logger.watchFor ["depositMinerals", "workerStartedMining"]
 time = common.SimSingletons.register common.SimTimer
 
 #tests
@@ -51,7 +50,7 @@ describe 'EconSim with one base one worker', ->
 describe 'EconSim with one base and two workers', ->
   before ->
     logger.clear()
-    logger.fwatchFor 'gatherFromMinPatch', (min) -> min[1].simId
+    logger.fwatchFor 'workerStartedMining', (e) -> "#{e.simId}-#{e.args[0].simId}" #0 is time
     time.reset()
 
   sim = new econ.EconSim
@@ -69,9 +68,10 @@ describe 'EconSim with one base and two workers', ->
     base.mineralAmt.should.be.above 0
 
   it 'will distribute the workers amongst two mineral patches', ->
-    #update until both patches are targeted
-    logger.event('gatherFromMinPatch').length.should.equal 2
-    #update unti one worker switches patches
+    timeOut = 200
+    sim.update() until logger.eventOccurs('workerCanceledHarvest', timeOut--)
+    _(logger.event('workerStartedMining')).unique().length.should.equal 2
+
 
 describe 'MineralPatch', ->
   before ->
@@ -96,6 +96,7 @@ describe 'MineralPatch', ->
 describe 'Worker.gatherResource()', ->
   before ->
     logger.clear()
+    logger.watchFor ["depositMinerals"]
     time.reset()
 
   sim = new econ.EconSim()

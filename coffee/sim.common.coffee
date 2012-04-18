@@ -25,26 +25,35 @@ class SimEventLog
     @events = {}
     @eventsToCollect = {}
 
+  defaultFormatter: (e) -> e
+
   event: (eventName, filter) ->
     # TODO impliment filter
     @events[eventName] ? []
 
   watchFor: (eventNames) ->
     for e in eventNames
-      @eventsToCollect[e] = (args) -> args
+      @eventsToCollect[e] = @defaultFormatter
       @events[e] = []
 
-  fwatchFor: (event, formatter) ->
-    @eventsToCollect[event] = formatter ? (args) -> args
-    @events[event] ?= []
+  fwatchFor: (eventName, formatter) ->
+    @eventsToCollect[eventName] = formatter ? @defaultFormatter 
+    @events[eventName] ?= []
 
-  log: (eventName, args...) ->
-    formatter = @eventsToCollect[eventName]
-    @events[eventName].push(formatter(args)) if formatter
+  log: (e) ->
+    formatter = @eventsToCollect[e.eventName]
+    @events[e.eventName].push(formatter(e)) if formatter
 
   clear: ->
     @events = {}
     @watchFor _(@eventsToCollect).keys()
+
+  eventOccurs: (eventName, timeOut, condition) ->
+    # eg. do.Something() until logger.eventOccurs()
+    # TODO : condition
+    if not @events[eventName] 
+      @watchFor(eventName)
+    @event(eventName).length > 0 or timeOut < 0
 
 
 class SimTimer
@@ -75,7 +84,11 @@ class SimActor
     @["state_#{@stateName}"].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
-    @logger?.log msgName, @time.tick, a, b, c, d
+    @logger?.log 
+      eventName: msgName
+      eventTime: @time.tick
+      simId: @simId
+      args: [a, b, c, d]
     @currentTransitions[msgName]?.call @, a, b, c, d
 
   update: (t) ->
