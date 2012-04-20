@@ -3,10 +3,8 @@ SCSim = root.SCSim
 
 runSim = (workerCount) ->
   sim = new SCSim.EconSim
-  sim.logger.fwatchFor [
-    'mineralsCollected'
-    (e) -> [new Date(e.eventTime * 1000), +e.args[0]]
-  ]
+  sim.logger.fwatchFor 'mineralsCollected',
+     (e) -> [new Date(e.eventTime * 1000), +e.args[0]]
 
   base = sim.createActor SCSim.SimBase
   sim.say 'start'

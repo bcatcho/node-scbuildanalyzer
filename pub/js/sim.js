@@ -9,11 +9,9 @@
   runSim = function(workerCount) {
     var base, data, e, i, sim, _i, _j, _k, _len, _ref;
     sim = new SCSim.EconSim;
-    sim.logger.fwatchFor([
-      'mineralsCollected', function(e) {
-        return [new Date(e.eventTime * 1000), +e.args[0]];
-      }
-    ]);
+    sim.logger.fwatchFor('mineralsCollected', function(e) {
+      return [new Date(e.eventTime * 1000), +e.args[0]];
+    });
     base = sim.createActor(SCSim.SimBase);
     sim.say('start');
     for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
