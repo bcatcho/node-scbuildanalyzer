@@ -1,15 +1,8 @@
-root = exports ? this
-_ = require 'underscore'
+_ = window._
+SCSim = window.SCSim ? {}
+window.SCSim = SCSim
 
-_.mixin
-  rot: (arr, num=1) ->
-    @rest(arr, num).concat @first(arr, num)
-
-  containsInstanceOf: (collection, theType) ->
-    if _(collection).isObject() then collection = _(collection).values()
-    _(collection).any (i) -> i instanceof(theType)
-
-class SimSingletons
+SCSim.SimSingletons = class SimSingletons
   @dependency = {}
   @register: (proto, instance) ->
     @dependency[proto.name] = instance ? new proto
@@ -20,7 +13,7 @@ class SimSingletons
     @dependency[proto.name]
 
 
-class SimEventLog
+SCSim.SimEventLog = class SimEventLog
   constructor: ->
     @events = {}
     @eventsToCollect = {}
@@ -64,7 +57,7 @@ class SimEventLog
       timeOut <= 0
 
 
-class SimTimer
+SCSim.SimTimer = class SimTimer
   constructor: ->
     @tick = 0
     @seconds = 0
@@ -77,11 +70,9 @@ class SimTimer
     @tick = 0
     @seconds = 0
 
-class SimActor
+SCSim.SimActor = class SimActor
   constructor: (defaultStateName = "default") ->
     @currentState
-    @logger = SimSingletons.get SimEventLog
-    @time = SimSingletons.get SimTimer
     @currentTransitions
     @switchStateTo defaultStateName
 
@@ -115,9 +106,3 @@ class SimActor
 
   # convienience method for states with no update loop
   @noopUpdate: -> ->
-
-
-root.SimSingletons = SimSingletons
-root.SimEventLog = SimEventLog
-root.SimActor = SimActor
-root.SimTimer = SimTimer

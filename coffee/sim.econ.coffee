@@ -1,16 +1,20 @@
-root = exports ? this
-_ = require 'underscore'
-common = require './sim.common.coffee'
-
-class EconSim extends common.SimActor
+_ = window._
+SCSim = window.SCSim ? {}
+window.SCSim = SCSim
+should = chai.should()
+SCSim.EconSim = class EconSim extends SCSim.SimActor
   constructor: ->
     @subActors = {}
+    @logger = new SCSim.SimEventLog
+    @time = new SCSim.SimTimer
     super()
 
   createActor: (actr, a, b, c, d) ->
     instance = new actr a,b,c,d
     instance.sim = @
     instance.simId = _.uniqueId()
+    instance.logger = @logger
+    instance.time = @time
     @subActors[instance.simId] = instance
     instance.instantiate?()
     instance
@@ -30,7 +34,7 @@ class EconSim extends common.SimActor
       @subActors[actr].update(@time.tick) for actr of @subActors
 
 
-class Base extends common.SimActor
+SCSim.SimBase = class SimBase extends SCSim.SimActor
   constructor: ->
     @mineralAmt = 0
     @mins = []
@@ -40,7 +44,7 @@ class Base extends common.SimActor
     super()
 
   instantiate: ->
-    @mins = (@sim.createActor(MineralPatch, @) for i in [1..8])
+    @mins = (@sim.createActor(SimMineralPatch, @) for i in [1..8])
     @rallyResource = @mins[0]
 
   updateBuildQueue: ->
@@ -67,10 +71,10 @@ class Base extends common.SimActor
         @mineralAmt += minAmt
 
       buildNewWorker: ->
-        @buildQueue.push({startTime: @time.tick , thing: Worker})
+        @buildQueue.push({startTime: @time.tick , thing: SimWorker})
 
 
-class MineralPatch extends common.SimActor
+SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
   constructor: (base, startingAmt = 100) ->
     @amt = startingAmt
     @base = base
@@ -109,7 +113,7 @@ class MineralPatch extends common.SimActor
           @workerMining = null
 
 
-class Worker extends common.SimActor
+SCSim.SimWorker = class SimWorker extends SCSim.SimActor
   constructor: ->
     @t_toBase = 3
     @t_toPatch = 3
@@ -185,10 +189,3 @@ class Worker extends common.SimActor
     messages:
       finishedDropOff: (base) ->
         @switchStateTo 'approachResource'
-
-
-#exports
-root.Worker = Worker
-root.EconSim = EconSim
-root.Base = Base
-root.MineralPatch = MineralPatch
