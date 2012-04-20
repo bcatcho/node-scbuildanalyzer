@@ -10,3 +10,6 @@ task 'build', 'continually build with --watch', (options) ->
   
   coffee = spawn 'coffee', [flags, '-o', 'test/', 'test/']
   coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
+
+task 'test', 'open client side tests in google chrome', (options) ->
+  spawn 'open', ['-a', 'Google Chrome', 'test/jasmine/SpecRunner.html']
