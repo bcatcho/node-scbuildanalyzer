@@ -1,17 +1,8 @@
-_ = window._
-SCSim = window.SCSim ? {}
-window.SCSim = SCSim
+root = exports ? this
 
-SCSim.SimSingletons = class SimSingletons
-  @dependency = {}
-  @register: (proto, instance) ->
-    @dependency[proto.name] = instance ? new proto
-    @dependency[proto.name]
-  @get: (proto) ->
-    if @dependency[proto.name] is undefined
-      console.error("dependency not found: #{proto.name}")
-    @dependency[proto.name]
-
+_ = root._ #require underscore
+SCSim = root.SCSim ? {}
+root.SCSim = SCSim
 
 SCSim.SimEventLog = class SimEventLog
   constructor: ->

@@ -1,11 +1,18 @@
-SCSim = window.SCSim
-_ = window._
+root = exports ? this
+
+chai = root.chai
+should = chai.should()
+
+SCSim = root.SCSim
+_ = root._
+
+# underscore extensions
 _.mixin
   containsInstanceOf: (collection, theType) ->
     if _(collection).isObject() then collection = _(collection).values()
     _(collection).any (i) -> i instanceof(theType)
 
-#tests
+# tests
 describe 'EconSim with one base one worker', ->
   sim = new SCSim.EconSim
   base = null
@@ -56,7 +63,8 @@ describe 'EconSim with one base and two workers', ->
 
   it 'will distribute the workers amongst two mineral patches', ->
     timeOut = 200
-    sim.update() until sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)
+    until sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)
+      sim.update()
     sim.update() for i in [0..10]
     _(sim.logger.event('workerStartedMining')).unique().length.should.equal 2
 

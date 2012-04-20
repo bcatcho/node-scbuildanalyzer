@@ -1,38 +1,39 @@
+root = exports ? this
+SCSim = root.SCSim
 
-data = []
-data.push [0,0]
-data.push [0,0]
+runSim = (workerCount) ->
+  sim = new SCSim.EconSim
+  sim.logger.fwatchFor [
+    'mineralsCollected'
+    (e) -> [new Date(e.eventTime * 1000), +e.args[0]]
+  ]
 
-data[0].push [i, i + Math.sin(i/3.14) * 20] for i in [0..100]
-data[1].push [i, i + Math.cos(i/3.14)] for i in [0..100]
+  base = sim.createActor SCSim.SimBase
+  sim.say 'start'
+  base.say 'buildNewWorker' for i in [1..workerCount]
 
+  sim.update() for i in [0..400]
 
-markings = []
-obj =
-  xaxis:
-    from: 10
-    to: 10
-  color: "#f4bfbd"
-
-markings.push obj
+  data = []
+  data.push(e) for e in sim.logger.event 'mineralsCollected'
+  data
 
 series = []
 series.push
-  data: data[0]
+  data: runSim 10
   shadowSize: 0
   lines:
     lineWidth: 1
 
 series.push
-  data: data[1]
+  data: runSim 5
   shadowSize: 0
   lines:
     lineWidth: 1
 
-options = 
+options =
   grid:
-    borderWidth: 0 
-    markings: markings
+    borderWidth: 0
   xaxis:
     mode: "time"
     timeformat: "%M:%S"

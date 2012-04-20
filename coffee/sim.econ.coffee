@@ -1,7 +1,11 @@
-_ = window._
-SCSim = window.SCSim ? {}
-window.SCSim = SCSim
-should = chai.should()
+root = exports ? this
+
+_ = root._ #require underscore
+
+SCSim = root.SCSim ? {}
+root.SCSim = SCSim
+
+
 SCSim.EconSim = class EconSim extends SCSim.SimActor
   constructor: ->
     @subActors = {}
@@ -49,13 +53,9 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
 
   updateBuildQueue: ->
     if @buildQueue.length > 0
-      thingBuilding = @buildQueue[0]
-      if @isExpired @t_buildWorker - (@time.tick - thingBuilding.startTime)
-        thing = @sim.createActor thingBuilding.thing
-        thing.say 'gatherFromMinPatch', @rallyResource
-        @buildQueue = @buildQueue[1..]
-        if @buildQueue.length > 0
-          @buildQueue[0].startTime = @time.tick
+      harvester = @buildQueue[0]
+      if @isExpired @t_buildWorker - (@time.tick - harvester.startTime)
+        @say 'doneBuildingWorker', harvester
         
 
   getMostAvailableMinPatch: ->
@@ -69,10 +69,18 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
     messages:
       depositMinerals: (minAmt) ->
         @mineralAmt += minAmt
+        # TODO this is for logging purposes. do something about this
+        @say 'mineralsCollected', @mineralAmt
 
       buildNewWorker: ->
         @buildQueue.push({startTime: @time.tick , thing: SimWorker})
 
+      doneBuildingWorker: (harvester) ->
+        thing = @sim.createActor harvester.thing
+        thing.say 'gatherFromMinPatch', @rallyResource
+        @buildQueue = @buildQueue[1..]
+        if @buildQueue.length > 0
+          @buildQueue[0].startTime = @time.tick
 
 SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
   constructor: (base, startingAmt = 100) ->
