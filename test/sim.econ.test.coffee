@@ -54,8 +54,9 @@ describe 'EconSim with one base and two workers', ->
   it 'should queue up two workers at base', ->
     base.say 'buildNewWorker'
     base.say 'buildNewWorker'
+    base.say 'buildNewWorker'
     sim.update()
-    base.buildQueue.length.should.equal 2
+    base.buildQueue.length.should.equal 3
 
   it 'will make the first worker harvest while the 2nd builds', ->
     sim.update() while base.buildQueue.length > 0
@@ -65,9 +66,9 @@ describe 'EconSim with one base and two workers', ->
     timeOut = 200
     until sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)
       sim.update()
-    sim.update() for i in [0..10]
-    _(sim.logger.event('workerStartedMining')).unique().length.should.equal 2
-
+    sim.update() for i in [1..40]
+    console.log(_(sim.logger.event('workerStartedMining')).unique())
+    _(sim.logger.event('workerStartedMining')).unique().length.should.be.above 1
 
 
 describe 'MineralPatch', ->

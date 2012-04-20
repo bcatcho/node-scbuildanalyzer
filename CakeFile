@@ -1,0 +1,12 @@
+{spawn, exec} = require 'child_process'
+
+option '-p', '--prefix [DIR]', 'set the installation prefix for `cake install`'
+option '-w', '--watch', 'watch the files for changes and build'
+
+task 'build', 'continually build with --watch', (options) ->
+  flags = '-c' + (if options.watch then 'w' else '')
+  coffee = spawn 'coffee', [flags, '-o', 'pub/js/', 'coffee/']
+  coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
+  
+  coffee = spawn 'coffee', [flags, '-o', 'test/', 'test/']
+  coffee.stdout.on 'data', (data) -> console.log data.toString().trim()

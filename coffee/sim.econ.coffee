@@ -34,7 +34,7 @@ SCSim.EconSim = class EconSim extends SCSim.SimActor
 
   @state "running"
     update: -> (t) ->
-      @time.step()
+      @time.step(1)
       @subActors[actr].update(@time.tick) for actr of @subActors
 
 
@@ -54,9 +54,9 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
   updateBuildQueue: ->
     if @buildQueue.length > 0
       harvester = @buildQueue[0]
-      if @isExpired @t_buildWorker - (@time.tick - harvester.startTime)
+      if @isExpired (@t_buildWorker - (@time.tick - harvester.startTime))
         @say 'doneBuildingWorker', harvester
-        
+
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.workers.length
@@ -88,11 +88,13 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
     @base = base
     @workers = []
     @workerMining = null
+    @targetedBy = 0
     super()
 
   getClosestAvailableResource: ->
-    for m in @base.mins when m isnt @
-      return m if m.isAvailable()
+    sortedMins = _(@base.mins).sortBy (m) -> m.targetedBy
+    for m in sortedMins when m isnt @
+      return m
 
   isAvailable: ->
     @workerMining == null
@@ -120,12 +122,18 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
         if @workerMining is wrkr
           @workerMining = null
 
+      targetedByHarvester: ->
+        @targetedBy += 1
+      
+      untargetedByHarvester: ->
+        @targetedBy -= 1
+
 
 SCSim.SimWorker = class SimWorker extends SCSim.SimActor
   constructor: ->
     @t_toBase = 3
     @t_toPatch = 3
-    @t_mine = 4
+    @t_mine = 3
     @targetResource
     @collectAmt = 5
     super 'idle'
@@ -139,6 +147,7 @@ SCSim.SimWorker = class SimWorker extends SCSim.SimActor
 
       gatherFromMinPatch: (minPatch) ->
         @targetResource = minPatch
+        @targetResource.say 'targetedByHarvester'
         @switchStateTo 'approachResource'
 
   @state "approachResource"
@@ -164,7 +173,9 @@ SCSim.SimWorker = class SimWorker extends SCSim.SimActor
     messages:
       changeTargetResource: (newResource) ->
         @targetResource.say 'workerCanceledHarvest', @
+        @targetResource.say 'untargetedByHarvester'
         @targetResource = newResource
+        @targetResource.say 'targetedByHarvester'
         @switchStateTo 'approachResource'
 
   @state "harvest"

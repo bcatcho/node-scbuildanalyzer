@@ -56,7 +56,7 @@
       update: function() {
         return function(t) {
           var actr, _results;
-          this.time.step();
+          this.time.step(1);
           _results = [];
           for (actr in this.subActors) {
             _results.push(this.subActors[actr].update(this.time.tick));
@@ -162,18 +162,19 @@
       this.base = base;
       this.workers = [];
       this.workerMining = null;
+      this.targetedBy = 0;
       SimMineralPatch.__super__.constructor.call(this);
     }
 
     SimMineralPatch.prototype.getClosestAvailableResource = function() {
-      var m, _i, _len, _ref1;
-      _ref1 = this.base.mins;
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        m = _ref1[_i];
+      var m, sortedMins, _i, _len;
+      sortedMins = _(this.base.mins).sortBy(function(m) {
+        return m.targetedBy;
+      });
+      for (_i = 0, _len = sortedMins.length; _i < _len; _i++) {
+        m = sortedMins[_i];
         if (m !== this) {
-          if (m.isAvailable()) {
-            return m;
-          }
+          return m;
         }
       }
     };
@@ -204,6 +205,12 @@
           if (this.workerMining === wrkr) {
             return this.workerMining = null;
           }
+        },
+        targetedByHarvester: function() {
+          return this.targetedBy += 1;
+        },
+        untargetedByHarvester: function() {
+          return this.targetedBy -= 1;
         }
       }
     });
@@ -221,7 +228,7 @@
     function SimWorker() {
       this.t_toBase = 3;
       this.t_toPatch = 3;
-      this.t_mine = 4;
+      this.t_mine = 3;
       this.targetResource;
       this.collectAmt = 5;
       SimWorker.__super__.constructor.call(this, 'idle');
@@ -235,6 +242,7 @@
         },
         gatherFromMinPatch: function(minPatch) {
           this.targetResource = minPatch;
+          this.targetResource.say('targetedByHarvester');
           return this.switchStateTo('approachResource');
         }
       }
@@ -274,7 +282,9 @@
       messages: {
         changeTargetResource: function(newResource) {
           this.targetResource.say('workerCanceledHarvest', this);
+          this.targetResource.say('untargetedByHarvester');
           this.targetResource = newResource;
+          this.targetResource.say('targetedByHarvester');
           return this.switchStateTo('approachResource');
         }
       }

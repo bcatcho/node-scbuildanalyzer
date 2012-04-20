@@ -75,8 +75,9 @@
     it('should queue up two workers at base', function() {
       base.say('buildNewWorker');
       base.say('buildNewWorker');
+      base.say('buildNewWorker');
       sim.update();
-      return base.buildQueue.length.should.equal(2);
+      return base.buildQueue.length.should.equal(3);
     });
     it('will make the first worker harvest while the 2nd builds', function() {
       while (base.buildQueue.length > 0) {
@@ -90,10 +91,11 @@
       while (!sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)) {
         sim.update();
       }
-      for (i = _i = 0; _i <= 10; i = ++_i) {
+      for (i = _i = 1; _i <= 40; i = ++_i) {
         sim.update();
       }
-      return _(sim.logger.event('workerStartedMining')).unique().length.should.equal(2);
+      console.log(_(sim.logger.event('workerStartedMining')).unique());
+      return _(sim.logger.event('workerStartedMining')).unique().length.should.be.above(1);
     });
   });
 
