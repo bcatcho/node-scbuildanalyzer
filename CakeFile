@@ -13,3 +13,8 @@ task 'build', 'continually build with --watch', (options) ->
 
 task 'test', 'open client side tests in google chrome', (options) ->
   spawn 'open', ['-a', 'Google Chrome', 'test/jasmine/SpecRunner.html']
+  
+task 'run:sim', 'view the Simuation in google chrome', (options) ->
+  chrome = spawn 'open', ['-a', 'Google Chrome', 'http://localhost:8081']
+  node = spawn 'node', ['server.js']
+  node.stdout.on 'data', (data) -> console.log data.toString().trim()
