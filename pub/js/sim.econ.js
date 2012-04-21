@@ -59,7 +59,7 @@
           this.time.step(1);
           _results = [];
           for (actr in this.subActors) {
-            _results.push(this.subActors[actr].update(this.time.tick));
+            _results.push(this.subActors[actr].update(this.time.sec));
           }
           return _results;
         };
@@ -80,13 +80,12 @@
       this.mineralAmt = 0;
       this.mins = [];
       this.rallyResource = this.mins[0];
-      this.t_buildWorker = 17;
       this.buildQueue = [];
       SimBase.__super__.constructor.call(this);
     }
 
     SimBase.prototype.instantiate = function() {
-      var i;
+      var i, wrkr, _i, _j, _len, _ref1, _results;
       this.mins = (function() {
         var _i, _results;
         _results = [];
@@ -95,22 +94,32 @@
         }
         return _results;
       }).call(this);
-      return this.rallyResource = this.mins[0];
+      for (i = _i = 1; _i <= 6; i = ++_i) {
+        this.workers = this.sim.createActor(SCSim.SimWorker, this);
+      }
+      this.rallyResource = this.mins[0];
+      _ref1 = this.workers;
+      _results = [];
+      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+        wrkr = _ref1[_j];
+        _results.push(wrkr.say('gatherFromMinPatch', this.rallyResource));
+      }
+      return _results;
     };
 
     SimBase.prototype.updateBuildQueue = function() {
-      var harvester;
+      var unit;
       if (this.buildQueue.length > 0) {
-        harvester = this.buildQueue[0];
-        if (this.isExpired(this.t_buildWorker - (this.time.tick - harvester.startTime))) {
-          return this.say('doneBuildingWorker', harvester);
+        unit = this.buildQueue[0];
+        if (this.isExpired(unit.buildTime - (this.time.sec - unit.startTime))) {
+          return this.say('doneBuildUnit', unit.unitName);
         }
       }
     };
 
     SimBase.prototype.getMostAvailableMinPatch = function() {
       this.mins = _.sortBy(this.mins, function(m) {
-        return m.workers.length;
+        return m.targetedBy;
       });
       return this.mins[0];
     };
@@ -126,19 +135,22 @@
           this.mineralAmt += minAmt;
           return this.say('mineralsCollected', this.mineralAmt);
         },
-        buildNewWorker: function() {
+        buildUnit: function(unitName) {
+          var u;
+          u = SCSim.data.units[unitName];
           return this.buildQueue.push({
-            startTime: this.time.tick,
-            thing: SimWorker
+            startTime: this.time.sec,
+            buildTime: u.buildTime,
+            unitName: unitName
           });
         },
-        doneBuildingWorker: function(harvester) {
-          var thing;
-          thing = this.sim.createActor(harvester.thing);
-          thing.say('gatherFromMinPatch', this.rallyResource);
+        doneBuildUnit: function(unitName) {
+          var unit;
+          unit = this.sim.createActor(SCSim.data.units[unitName].actor());
+          unit.say('gatherFromMinPatch', this.rallyResource);
           this.buildQueue = this.buildQueue.slice(1);
           if (this.buildQueue.length > 0) {
-            return this.buildQueue[0].startTime = this.time.tick;
+            return this.buildQueue[0].startTime = this.time.sec;
           }
         }
       }
@@ -163,6 +175,7 @@
       this.workers = [];
       this.workerMining = null;
       this.targetedBy = 0;
+      this.workerOverlapThreshold = SCSim.config.workerOverlapThreshold;
       SimMineralPatch.__super__.constructor.call(this);
     }
 
@@ -183,6 +196,10 @@
       return this.workerMining === null;
     };
 
+    SimMineralPatch.prototype.isAvailableSoon = function(wrkr) {
+      return this.workerMiningTimeDone - this.time.sec < this.workerOverlapThreshold;
+    };
+
     SimMineralPatch.defaultState({
       update: SimMineralPatch.noopUpdate,
       messages: {
@@ -192,7 +209,8 @@
         mineralsHarvested: function(amtHarvested) {
           return this.amt -= amtHarvested;
         },
-        workerStartedMining: function(wrkr) {
+        workerStartedMining: function(wrkr, timeMiningDone) {
+          this.workerMiningTimeDone = timeMiningDone;
           return this.workerMining = wrkr;
         },
         workerFinishedMiningXminerals: function(wrkr, amtMined) {
@@ -226,9 +244,9 @@
     SimWorker.name = 'SimWorker';
 
     function SimWorker() {
-      this.t_toBase = 3;
-      this.t_toPatch = 3;
-      this.t_mine = 3;
+      this.t_toBase = 2;
+      this.t_toPatch = 2;
+      this.t_mine = 1.5;
       this.targetResource;
       this.collectAmt = 5;
       SimWorker.__super__.constructor.call(this, 'idle');
@@ -250,7 +268,7 @@
 
     SimWorker.state("approachResource", {
       update: function() {
-        return this.sayAfter(this.t_toPatch, 'arrivedAtMinPatch');
+        return this.sayAfter(this.t_toBase, 'arrivedAtMinPatch');
       },
       messages: {
         arrivedAtMinPatch: function() {
@@ -272,7 +290,7 @@
         var nextResource;
         if (this.targetResource.isAvailable()) {
           return this.switchStateTo('harvest');
-        } else {
+        } else if (!this.targetResource.isAvailableSoon()) {
           nextResource = this.targetResource.getClosestAvailableResource();
           if (nextResource) {
             return this.say('changeTargetResource', nextResource);
@@ -295,7 +313,7 @@
         return this.sayAfter(this.t_mine, 'finishedMining');
       },
       enterState: function() {
-        return this.targetResource.say('workerStartedMining', this);
+        return this.targetResource.say('workerStartedMining', this, this.time.sec + this.t_mine);
       },
       messages: {
         finishedMining: function() {

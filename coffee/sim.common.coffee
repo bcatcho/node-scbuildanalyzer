@@ -51,15 +51,16 @@ SCSim.SimEventLog = class SimEventLog
 SCSim.SimTimer = class SimTimer
   constructor: ->
     @tick = 0
-    @seconds = 0
+    @sec = 0
+    @secPerTick = SCSim.config.secsPerTick
 
   step: (steps = 1) ->
     @tick += steps
-    @seconds += steps
+    @sec += steps * @secPerTick
 
   reset: ->
     @tick = 0
-    @seconds = 0
+    @sec = 0
 
 SCSim.SimActor = class SimActor
   constructor: (defaultStateName = "default") ->
@@ -76,7 +77,7 @@ SCSim.SimActor = class SimActor
   say: (msgName, a, b, c, d) ->
     @logger?.log
       eventName: msgName
-      eventTime: @time.tick
+      eventTime: @time
       simId: @simId
       args: [a, b, c, d]
     @currentTransitions[msgName]?.call @, a, b, c, d
@@ -93,7 +94,8 @@ SCSim.SimActor = class SimActor
   isExpired: (t) -> t <= 0
 
   sayAfter: (timeSpan, a, b, c, d) ->
-    (t) -> @say(a,b,c,d) if @isExpired timeSpan--
+    endTime = @time.sec + timeSpan
+    (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
 
   # convienience method for states with no update loop
   @noopUpdate: -> ->

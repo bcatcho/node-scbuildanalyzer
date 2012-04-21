@@ -32,6 +32,7 @@ How will we add buildings into the build order decision tree?
    - buildings
 
 ## Modeling Worker Mineral Collection
+More Research: [http://wiki.teamliquid.net/starcraft2/Protoss_Unit_Statistics][http://wiki.teamliquid.net/starcraft2/Protoss_Unit_Statistics]
 Some research:[http://wiki.teamliquid.net/starcraft2/Mining**Minerals][some research]
 - Mineral patches are the bottleneck
   The first two workers on a patch will collect 40 min/sec, the 3rd will collect 20.

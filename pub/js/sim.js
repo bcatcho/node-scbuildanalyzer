@@ -7,45 +7,70 @@
   SCSim = root.SCSim;
 
   runSim = function(workerCount, simLength) {
-    var base, e, i, lastWorkerEvent, results, sim, tickToDate, _i, _j, _k, _len, _ref;
+    var base, d, dataChunkTime, dataFirstPass, e, i, n, perChunkToPerMin, results, sim, simTickLength, tickToDate, time, _i, _j, _k, _l, _len, _len1, _ref, _ref1;
     if (simLength == null) {
       simLength = 600;
     }
+    simTickLength = simLength / SCSim.config.secsPerTick;
     tickToDate = function(t) {
       return new Date(t * 1000);
     };
     sim = new SCSim.EconSim;
     sim.logger.fwatchFor('mineralsCollected', function(e) {
-      return [tickToDate(e.eventTime), e.args[0] / (e.eventTime / 60)];
+      return [e.eventTime.sec, e.args[0] / (e.eventTime.sec / 60)];
     });
-    sim.logger.fwatchFor('doneBuildingWorker', function(e) {
-      return tickToDate(e.eventTime);
+    sim.logger.fwatchFor('doneBuildUnit', function(e) {
+      return tickToDate(e.eventTime.sec);
     });
     base = sim.createActor(SCSim.SimBase);
     sim.say('start');
     for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
-      base.say('buildNewWorker');
+      base.say('buildUnit', 'probe');
     }
-    for (i = _j = 0; 0 <= simLength ? _j <= simLength : _j >= simLength; i = 0 <= simLength ? ++_j : --_j) {
+    for (i = _j = 1; 1 <= simTickLength ? _j <= simTickLength : _j >= simTickLength; i = 1 <= simTickLength ? ++_j : --_j) {
       sim.update();
     }
     results = {
-      data: [[0, 0]],
+      data: [],
       markings: []
+    };
+    dataFirstPass = [];
+    dataChunkTime = 8 * (2 + 2 + 1.5);
+    perChunkToPerMin = function(amt) {
+      return amt * (60 / dataChunkTime);
     };
     _ref = sim.logger.event('mineralsCollected');
     for (_k = 0, _len = _ref.length; _k < _len; _k++) {
       e = _ref[_k];
-      results.data.push(e);
+      time = Math.floor(e[0] / dataChunkTime);
+      if (dataFirstPass[time] === void 0) {
+        dataFirstPass[time] = {
+          time: tickToDate(time * dataChunkTime),
+          amt: 0
+        };
+      }
+      dataFirstPass[time].amt += 5;
     }
-    lastWorkerEvent = _(sim.logger.event('doneBuildingWorker')).last();
-    results.markings.push({
-      xaxis: {
-        from: lastWorkerEvent,
-        to: lastWorkerEvent
-      },
-      color: "#fdbbdb"
-    });
+    results.data = (function() {
+      var _results;
+      _results = [];
+      for (n in dataFirstPass) {
+        d = dataFirstPass[n];
+        _results.push([d.time, perChunkToPerMin(d.amt)]);
+      }
+      return _results;
+    })();
+    _ref1 = sim.logger.event('doneBuildUnit');
+    for (_l = 0, _len1 = _ref1.length; _l < _len1; _l++) {
+      e = _ref1[_l];
+      results.markings.push({
+        xaxis: {
+          from: e,
+          to: e
+        },
+        color: "#edebfb"
+      });
+    }
     return results;
   };
 
@@ -64,7 +89,7 @@
 
   addSeries = function(series, options, workerCount) {
     var results;
-    results = runSim(workerCount);
+    results = runSim(workerCount, 2000);
     series.push({
       data: results.data,
       shadowSize: 0,
@@ -79,9 +104,9 @@
     };
   };
 
-  _ref = addSeries(series, options, 10), series = _ref.series, options = _ref.options;
+  _ref = addSeries(series, options, 100), series = _ref.series, options = _ref.options;
 
-  _ref1 = addSeries(series, options, 5), series = _ref1.series, options = _ref1.options;
+  _ref1 = addSeries(series, options, 4), series = _ref1.series, options = _ref1.options;
 
   $.plot($("#placeholder"), series, options);
 

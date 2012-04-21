@@ -12,6 +12,9 @@ _.mixin
     if _(collection).isObject() then collection = _(collection).values()
     _(collection).any (i) -> i instanceof(theType)
 
+#configure
+SCSim.config.secsPerTick = 1 # to speed up tests
+
 # tests
 describe 'EconSim with one base one worker', ->
   sim = new SCSim.EconSim
@@ -32,13 +35,14 @@ describe 'EconSim with one base one worker', ->
       sim.time.tick.should.equal 0
 
   describe 'When the base creates a new worker', ->
-    base.say 'buildNewWorker'
+    base.say 'buildUnit', 'probe'
 
     it 'should _not yet_ have another subActor that is a EconSim::Worker', ->
-      _(sim.subActors).containsInstanceOf(SCSim.SimWorker).should.equal false
+      filter = (a) -> a instanceof SCSim.SimWorker
+      _(sim.subActors).filter(filter).length.should.equal 6
 
     it 'but after update(build time) it should have a Worker subActor', ->
-      sim.update() for i in [1..base.t_buildWorker]
+      sim.update() for i in [1..100]
       _(sim.subActors).containsInstanceOf(SCSim.SimWorker).should.equal true
 
     it 'the base should receive minerals after some time', ->
@@ -52,9 +56,9 @@ describe 'EconSim with one base and two workers', ->
   base = sim.createActor SCSim.SimBase
 
   it 'should queue up two workers at base', ->
-    base.say 'buildNewWorker'
-    base.say 'buildNewWorker'
-    base.say 'buildNewWorker'
+    base.say 'buildUnit', 'probe'
+    base.say 'buildUnit', 'probe'
+    base.say 'buildUnit', 'probe'
     sim.update()
     base.buildQueue.length.should.equal 3
 

@@ -35,7 +35,7 @@ SCSim.EconSim = class EconSim extends SCSim.SimActor
   @state "running"
     update: -> (t) ->
       @time.step(1)
-      @subActors[actr].update(@time.tick) for actr of @subActors
+      @subActors[actr].update(@time.sec) for actr of @subActors
 
 
 SCSim.SimBase = class SimBase extends SCSim.SimActor
@@ -43,23 +43,23 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
     @mineralAmt = 0
     @mins = []
     @rallyResource = @mins[0]
-    @t_buildWorker = 17
     @buildQueue = []
     super()
 
   instantiate: ->
     @mins = (@sim.createActor(SimMineralPatch, @) for i in [1..8])
+    @workers = @sim.createActor(SCSim.SimWorker, @) for i in [1..6]
     @rallyResource = @mins[0]
+    wrkr.say 'gatherFromMinPatch', @rallyResource for wrkr in @workers
 
   updateBuildQueue: ->
     if @buildQueue.length > 0
-      harvester = @buildQueue[0]
-      if @isExpired (@t_buildWorker - (@time.tick - harvester.startTime))
-        @say 'doneBuildingWorker', harvester
-
+      unit = @buildQueue[0]
+      if @isExpired (unit.buildTime - (@time.sec - unit.startTime))
+        @say 'doneBuildUnit', unit.unitName
 
   getMostAvailableMinPatch: ->
-    @mins = _.sortBy @mins, (m) -> m.workers.length
+    @mins = _.sortBy @mins, (m) -> m.targetedBy
     @mins[0]
 
   @defaultState
@@ -72,15 +72,17 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
         # TODO this is for logging purposes. do something about this
         @say 'mineralsCollected', @mineralAmt
 
-      buildNewWorker: ->
-        @buildQueue.push({startTime: @time.tick , thing: SimWorker})
+      buildUnit: (unitName) ->
+        u = SCSim.data.units[unitName]
+        @buildQueue.push {startTime: @time.sec, buildTime: u.buildTime, unitName: unitName}
 
-      doneBuildingWorker: (harvester) ->
-        thing = @sim.createActor harvester.thing
-        thing.say 'gatherFromMinPatch', @rallyResource
+      doneBuildUnit: (unitName) ->
+        unit = @sim.createActor SCSim.data.units[unitName].actor()
+        unit.say 'gatherFromMinPatch', @rallyResource
+
         @buildQueue = @buildQueue[1..]
         if @buildQueue.length > 0
-          @buildQueue[0].startTime = @time.tick
+          @buildQueue[0].startTime = @time.sec
 
 SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
   constructor: (base, startingAmt = 100) ->
@@ -89,6 +91,7 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
     @workers = []
     @workerMining = null
     @targetedBy = 0
+    @workerOverlapThreshold = SCSim.config.workerOverlapThreshold
     super()
 
   getClosestAvailableResource: ->
@@ -98,6 +101,9 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
 
   isAvailable: ->
     @workerMining == null
+
+  isAvailableSoon: (wrkr) ->
+    (@workerMiningTimeDone - @time.sec < @workerOverlapThreshold)
 
   @defaultState
     update: @noopUpdate
@@ -109,7 +115,8 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
       mineralsHarvested: (amtHarvested) ->
         @amt -= amtHarvested
 
-      workerStartedMining: (wrkr) ->
+      workerStartedMining: (wrkr, timeMiningDone) ->
+        @workerMiningTimeDone = timeMiningDone
         @workerMining = wrkr
 
       workerFinishedMiningXminerals: (wrkr, amtMined) ->
@@ -131,9 +138,9 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
 
 SCSim.SimWorker = class SimWorker extends SCSim.SimActor
   constructor: ->
-    @t_toBase = 3
-    @t_toPatch = 3
-    @t_mine = 3
+    @t_toBase = 2
+    @t_toPatch = 2
+    @t_mine = 1.5
     @targetResource
     @collectAmt = 5
     super 'idle'
@@ -152,7 +159,7 @@ SCSim.SimWorker = class SimWorker extends SCSim.SimActor
 
   @state "approachResource"
     update: ->
-      @sayAfter @t_toPatch, 'arrivedAtMinPatch'
+      @sayAfter @t_toBase, 'arrivedAtMinPatch'
 
     messages:
       arrivedAtMinPatch: ->
@@ -166,7 +173,7 @@ SCSim.SimWorker = class SimWorker extends SCSim.SimActor
     enterState: ->
       if @targetResource.isAvailable()
         @switchStateTo 'harvest'
-      else
+      else if not @targetResource.isAvailableSoon()
         nextResource = @targetResource.getClosestAvailableResource()
         @say 'changeTargetResource', nextResource if nextResource
 
@@ -183,7 +190,7 @@ SCSim.SimWorker = class SimWorker extends SCSim.SimActor
       @sayAfter @t_mine, 'finishedMining'
 
     enterState: ->
-      @targetResource.say 'workerStartedMining', @
+      @targetResource.say 'workerStartedMining', @, @time.sec + @t_mine
 
     messages:
       finishedMining: ->

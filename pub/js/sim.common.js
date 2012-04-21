@@ -88,7 +88,8 @@
 
     function SimTimer() {
       this.tick = 0;
-      this.seconds = 0;
+      this.sec = 0;
+      this.secPerTick = SCSim.config.secsPerTick;
     }
 
     SimTimer.prototype.step = function(steps) {
@@ -96,12 +97,12 @@
         steps = 1;
       }
       this.tick += steps;
-      return this.seconds += steps;
+      return this.sec += steps * this.secPerTick;
     };
 
     SimTimer.prototype.reset = function() {
       this.tick = 0;
-      return this.seconds = 0;
+      return this.sec = 0;
     };
 
     return SimTimer;
@@ -134,7 +135,7 @@
       if ((_ref1 = this.logger) != null) {
         _ref1.log({
           eventName: msgName,
-          eventTime: this.time.tick,
+          eventTime: this.time,
           simId: this.simId,
           args: [a, b, c, d]
         });
@@ -161,8 +162,10 @@
     };
 
     SimActor.prototype.sayAfter = function(timeSpan, a, b, c, d) {
+      var endTime;
+      endTime = this.time.sec + timeSpan;
       return function(t) {
-        if (this.isExpired(timeSpan--)) {
+        if (this.isExpired(endTime - this.time.sec)) {
           return this.say(a, b, c, d);
         }
       };

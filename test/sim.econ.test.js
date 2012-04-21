@@ -23,6 +23,8 @@
     }
   });
 
+  SCSim.config.secsPerTick = 1;
+
   describe('EconSim with one base one worker', function() {
     var base, sim;
     sim = new SCSim.EconSim;
@@ -43,13 +45,17 @@
       });
     });
     return describe('When the base creates a new worker', function() {
-      base.say('buildNewWorker');
+      base.say('buildUnit', 'probe');
       it('should _not yet_ have another subActor that is a EconSim::Worker', function() {
-        return _(sim.subActors).containsInstanceOf(SCSim.SimWorker).should.equal(false);
+        var filter;
+        filter = function(a) {
+          return a instanceof SCSim.SimWorker;
+        };
+        return _(sim.subActors).filter(filter).length.should.equal(6);
       });
       it('but after update(build time) it should have a Worker subActor', function() {
-        var i, _i, _ref;
-        for (i = _i = 1, _ref = base.t_buildWorker; 1 <= _ref ? _i <= _ref : _i >= _ref; i = 1 <= _ref ? ++_i : --_i) {
+        var i, _i;
+        for (i = _i = 1; _i <= 100; i = ++_i) {
           sim.update();
         }
         return _(sim.subActors).containsInstanceOf(SCSim.SimWorker).should.equal(true);
@@ -73,9 +79,9 @@
     sim.say('start');
     base = sim.createActor(SCSim.SimBase);
     it('should queue up two workers at base', function() {
-      base.say('buildNewWorker');
-      base.say('buildNewWorker');
-      base.say('buildNewWorker');
+      base.say('buildUnit', 'probe');
+      base.say('buildUnit', 'probe');
+      base.say('buildUnit', 'probe');
       sim.update();
       return base.buildQueue.length.should.equal(3);
     });
