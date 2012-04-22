@@ -37,14 +37,6 @@ describe 'Simulation with one base one worker', ->
   describe 'When the base creates a new worker', ->
     base.say 'buildUnit', 'probe'
 
-    it 'should _not yet_ have another subActor that is a Simulation::Worker', ->
-      filter = (a) -> a instanceof SCSim.Harvester
-      _(sim.subActors).filter(filter).length.should.equal 6
-
-    it 'but after update(build time) it should have a Worker subActor', ->
-      sim.update() for i in [1..100]
-      _(sim.subActors).containsInstanceOf(SCSim.Harvester).should.equal true
-
     it 'the base should receive minerals after some time', ->
       sim.update() for i in [1..50]
       base.mineralAmt.should.be.above 0

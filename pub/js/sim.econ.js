@@ -39,6 +39,21 @@
       return instance;
     };
 
+    Simulation.prototype.createActor2 = function(name, a, b, c, d) {
+      var actorData, instance;
+      actorData = SCSim.data.units[name] || SCSim.data.buildings[name] || SCSim.data.neutral[name];
+      instance = new SCSim.Actor2(actorData.behaviors, a, b, c, d);
+      instance.sim = this;
+      instance.simId = _.uniqueId();
+      instance.logger = this.logger;
+      instance.time = this.time;
+      this.subActors[instance.simId] = instance;
+      if (typeof instance.instantiate === "function") {
+        instance.instantiate();
+      }
+      return instance;
+    };
+
     Simulation.prototype.getActor = function(simId) {
       return this.subActors[simId];
     };
@@ -77,52 +92,11 @@
     Trainer.name = 'Trainer';
 
     function Trainer() {
-      this.bQueue = [];
+      this.buildQueue = [];
       Trainer.__super__.constructor.call(this);
     }
 
-    return Trainer;
-
-  })(SCSim.Actor);
-
-  SCSim.PrimaryStructure = (function(_super) {
-
-    __extends(PrimaryStructure, _super);
-
-    PrimaryStructure.name = 'PrimaryStructure';
-
-    function PrimaryStructure() {
-      this.mineralAmt = 0;
-      this.mins = [];
-      this.rallyResource = this.mins[0];
-      this.buildQueue = [];
-      PrimaryStructure.__super__.constructor.call(this);
-    }
-
-    PrimaryStructure.prototype.instantiate = function() {
-      var i, wrkr, _i, _j, _len, _ref1, _results;
-      this.mins = (function() {
-        var _i, _results;
-        _results = [];
-        for (i = _i = 1; _i <= 8; i = ++_i) {
-          _results.push(this.sim.createActor(SCSim.MinPatch, this));
-        }
-        return _results;
-      }).call(this);
-      for (i = _i = 1; _i <= 6; i = ++_i) {
-        this.workers = this.sim.createActor(SCSim.Harvester, this);
-      }
-      this.rallyResource = this.mins[0];
-      _ref1 = this.workers;
-      _results = [];
-      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-        wrkr = _ref1[_j];
-        _results.push(wrkr.say('gatherFromMinPatch', this.rallyResource));
-      }
-      return _results;
-    };
-
-    PrimaryStructure.prototype.updateBuildQueue = function() {
+    Trainer.prototype.updateBuildQueue = function() {
       var unit;
       if (this.buildQueue.length > 0) {
         unit = this.buildQueue[0];
@@ -132,24 +106,13 @@
       }
     };
 
-    PrimaryStructure.prototype.getMostAvailableMinPatch = function() {
-      this.mins = _.sortBy(this.mins, function(m) {
-        return m.targetedBy;
-      });
-      return this.mins[0];
-    };
-
-    PrimaryStructure.defaultState({
+    Trainer.defaultState({
       update: function() {
         return function() {
           return this.updateBuildQueue();
         };
       },
       messages: {
-        depositMinerals: function(minAmt) {
-          this.mineralAmt += minAmt;
-          return this.say('mineralsCollected', this.mineralAmt);
-        },
         buildUnit: function(unitName) {
           var u;
           u = SCSim.data.units[unitName];
@@ -161,8 +124,8 @@
         },
         doneBuildUnit: function(unitName) {
           var unit;
-          unit = this.sim.createActor(SCSim.data.units[unitName].actor());
-          unit.say('gatherFromMinPatch', this.rallyResource);
+          unit = this.sim.createActor2(unitName);
+          unit.say('gatherFromMinPatch', this.actor.get("rallyResource"));
           this.buildQueue = this.buildQueue.slice(1);
           if (this.buildQueue.length > 0) {
             return this.buildQueue[0].startTime = this.time.sec;
@@ -171,9 +134,70 @@
       }
     });
 
+    return Trainer;
+
+  })(SCSim.Behavior);
+
+  SCSim.PrimaryStructure = (function(_super) {
+
+    __extends(PrimaryStructure, _super);
+
+    PrimaryStructure.name = 'PrimaryStructure';
+
+    function PrimaryStructure() {
+      this.mineralAmt = 0;
+      this.mins = [];
+      this._rallyResource = this.mins[0];
+      PrimaryStructure.__super__.constructor.call(this);
+    }
+
+    PrimaryStructure.prototype.rallyResource = function() {
+      return this._rallyResource;
+    };
+
+    PrimaryStructure.prototype.instantiate = function() {
+      var i, wrkr, _i, _j, _len, _ref1, _results;
+      this.mins = (function() {
+        var _i, _results;
+        _results = [];
+        for (i = _i = 1; _i <= 8; i = ++_i) {
+          _results.push(this.sim.createActor2("minPatch", this));
+        }
+        return _results;
+      }).call(this);
+      for (i = _i = 1; _i <= 6; i = ++_i) {
+        this.workers = this.sim.createActor2("probe");
+      }
+      this._rallyResource = this.mins[0];
+      _ref1 = this.workers;
+      _results = [];
+      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
+        wrkr = _ref1[_j];
+        _results.push(wrkr.say('gatherFromMinPatch', this._rallyResource));
+      }
+      return _results;
+    };
+
+    PrimaryStructure.prototype.getMostAvailableMinPatch = function() {
+      this.mins = _.sortBy(this.mins, function(m) {
+        return m.targetedBy;
+      });
+      return this.mins[0];
+    };
+
+    PrimaryStructure.defaultState({
+      update: PrimaryStructure.noopUpdate,
+      messages: {
+        depositMinerals: function(minAmt) {
+          this.mineralAmt += minAmt;
+          return this.say('mineralsCollected', this.mineralAmt);
+        }
+      }
+    });
+
     return PrimaryStructure;
 
-  })(SCSim.Actor);
+  })(SCSim.Behavior);
 
   SCSim.MinPatch = (function(_super) {
 
@@ -186,18 +210,26 @@
         startingAmt = 100;
       }
       this.amt = startingAmt;
-      this.base = base;
+      this._base = base;
+      this._targetedBy = 0;
       this.workers = [];
       this.workerMining = null;
-      this.targetedBy = 0;
       this.workerOverlapThreshold = SCSim.config.workerOverlapThreshold;
       MinPatch.__super__.constructor.call(this);
     }
 
+    MinPatch.prototype.base = function() {
+      return this._base;
+    };
+
+    MinPatch.prototype.targetedBy = function() {
+      return this._targetedBy;
+    };
+
     MinPatch.prototype.getClosestAvailableResource = function() {
       var m, sortedMins, _i, _len;
-      sortedMins = _(this.base.mins).sortBy(function(m) {
-        return m.targetedBy;
+      sortedMins = _(this._base.mins).sortBy(function(m) {
+        return m.get('targetedBy');
       });
       for (_i = 0, _len = sortedMins.length; _i < _len; _i++) {
         m = sortedMins[_i];
@@ -240,17 +272,17 @@
           }
         },
         targetedByHarvester: function() {
-          return this.targetedBy += 1;
+          return this._targetedBy += 1;
         },
         untargetedByHarvester: function() {
-          return this.targetedBy -= 1;
+          return this._targetedBy -= 1;
         }
       }
     });
 
     return MinPatch;
 
-  })(SCSim.Actor);
+  })(SCSim.Behavior);
 
   SCSim.Harvester = (function(_super) {
 
@@ -296,17 +328,17 @@
     Harvester.state("waitAtResource", {
       update: function() {
         return function() {
-          if (this.targetResource.isAvailable()) {
+          if (this.targetResource.get("isAvailable")) {
             return this.switchStateTo('harvest');
           }
         };
       },
       enterState: function() {
         var nextResource;
-        if (this.targetResource.isAvailable()) {
+        if (this.targetResource.get("isAvailable")) {
           return this.switchStateTo('harvest');
-        } else if (!this.targetResource.isAvailableSoon()) {
-          nextResource = this.targetResource.getClosestAvailableResource();
+        } else if (!this.targetResource.get("isAvailableSoon")) {
+          nextResource = this.targetResource.get("getClosestAvailableResource");
           if (nextResource) {
             return this.say('changeTargetResource', nextResource);
           }
@@ -333,7 +365,7 @@
       messages: {
         finishedMining: function() {
           this.targetResource.say('workerFinishedMiningXminerals', this, this.collectAmt);
-          return this.switchStateTo('approachDropOff', this.targetResource.base);
+          return this.switchStateTo('approachDropOff', this.targetResource.get("base"));
         }
       }
     });
@@ -364,6 +396,6 @@
 
     return Harvester;
 
-  })(SCSim.Actor);
+  })(SCSim.Behavior);
 
 }).call(this);

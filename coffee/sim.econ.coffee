@@ -23,6 +23,19 @@ class SCSim.Simulation extends SCSim.Actor
     instance.instantiate?()
     instance
 
+  createActor2: (name, a, b, c, d) ->
+    actorData = (SCSim.data.units[name] ||
+                  SCSim.data.buildings[name] ||
+                  SCSim.data.neutral[name])
+    instance = new SCSim.Actor2 actorData.behaviors, a,b,c,d
+    instance.sim = @
+    instance.simId = _.uniqueId()
+    instance.logger = @logger
+    instance.time = @time
+    @subActors[instance.simId] = instance
+    instance.instantiate?()
+    instance
+
   getActor: (simId) ->
     return @subActors[simId]
 
@@ -38,28 +51,10 @@ class SCSim.Simulation extends SCSim.Actor
       @subActors[actr].update(@time.sec) for actr of @subActors
 
 
-
-class SCSim.Trainer extends SCSim.Actor
+class SCSim.Trainer extends SCSim.Behavior
   constructor: ->
-    @bQueue = []
-    super()
-
-
-
-
-class SCSim.PrimaryStructure extends SCSim.Actor
-  constructor: ->
-    @mineralAmt = 0
-    @mins = []
-    @rallyResource = @mins[0]
     @buildQueue = []
     super()
-
-  instantiate: ->
-    @mins = (@sim.createActor(SCSim.MinPatch, @) for i in [1..8])
-    @workers = @sim.createActor(SCSim.Harvester, @) for i in [1..6]
-    @rallyResource = @mins[0]
-    wrkr.say 'gatherFromMinPatch', @rallyResource for wrkr in @workers
 
   updateBuildQueue: ->
     if @buildQueue.length > 0
@@ -67,20 +62,11 @@ class SCSim.PrimaryStructure extends SCSim.Actor
       if @isExpired (unit.buildTime - (@time.sec - unit.startTime))
         @say 'doneBuildUnit', unit.unitName
 
-  getMostAvailableMinPatch: ->
-    @mins = _.sortBy @mins, (m) -> m.targetedBy
-    @mins[0]
-
   @defaultState
     update: -> ->
       @updateBuildQueue()
 
     messages:
-      depositMinerals: (minAmt) ->
-        @mineralAmt += minAmt
-        # TODO this is for logging purposes. do something about this
-        @say 'mineralsCollected', @mineralAmt
-
       buildUnit: (unitName) ->
         u = SCSim.data.units[unitName]
         @buildQueue.push
@@ -89,25 +75,59 @@ class SCSim.PrimaryStructure extends SCSim.Actor
           unitName: unitName
 
       doneBuildUnit: (unitName) ->
-        unit = @sim.createActor SCSim.data.units[unitName].actor()
-        unit.say 'gatherFromMinPatch', @rallyResource
+        unit = @sim.createActor2 unitName
+        # FIXME what to do on build should be outside of this behavior?
+        unit.say 'gatherFromMinPatch', @actor.get "rallyResource"
 
         @buildQueue = @buildQueue[1..]
         if @buildQueue.length > 0
           @buildQueue[0].startTime = @time.sec
 
-class SCSim.MinPatch extends SCSim.Actor
+
+class SCSim.PrimaryStructure extends SCSim.Behavior
+  constructor: ->
+    @mineralAmt = 0
+    @mins = []
+    @_rallyResource = @mins[0]
+    super()
+
+  rallyResource: -> @_rallyResource
+
+  instantiate: ->
+    @mins = (@sim.createActor2("minPatch", @) for i in [1..8])
+    @workers = @sim.createActor2("probe") for i in [1..6]
+    @_rallyResource = @mins[0]
+    wrkr.say 'gatherFromMinPatch', @_rallyResource for wrkr in @workers
+
+  getMostAvailableMinPatch: ->
+    @mins = _.sortBy @mins, (m) -> m.targetedBy
+    @mins[0]
+
+  @defaultState
+    update: @noopUpdate
+
+    messages:
+      depositMinerals: (minAmt) ->
+        @mineralAmt += minAmt
+        # TODO this is for logging purposes. do something about this
+        @say 'mineralsCollected', @mineralAmt
+
+
+class SCSim.MinPatch extends SCSim.Behavior
   constructor: (base, startingAmt = 100) ->
     @amt = startingAmt
-    @base = base
+    @_base = base
+    @_targetedBy = 0
     @workers = []
     @workerMining = null
-    @targetedBy = 0
     @workerOverlapThreshold = SCSim.config.workerOverlapThreshold
     super()
 
+  base: -> @_base
+  targetedBy: -> @_targetedBy
+
   getClosestAvailableResource: ->
-    sortedMins = _(@base.mins).sortBy (m) -> m.targetedBy
+    sortedMins = _(@_base.mins).sortBy (m) -> m.get 'targetedBy'
     for m in sortedMins when m isnt @
       return m
 
@@ -142,13 +162,13 @@ class SCSim.MinPatch extends SCSim.Actor
           @workerMining = null
 
       targetedByHarvester: ->
-        @targetedBy += 1
+        @_targetedBy += 1
 
       untargetedByHarvester: ->
-        @targetedBy -= 1
+        @_targetedBy -= 1
 
 
-class SCSim.Harvester extends SCSim.Actor
+class SCSim.Harvester extends SCSim.Behavior
   constructor: ->
     @t_toBase = 2
     @t_toPatch = 2
@@ -180,13 +200,13 @@ class SCSim.Harvester extends SCSim.Actor
 
   @state "waitAtResource"
     update: -> ->
-      @switchStateTo 'harvest' if @targetResource.isAvailable()
+      @switchStateTo 'harvest' if @targetResource.get "isAvailable"
 
     enterState: ->
-      if @targetResource.isAvailable()
+      if @targetResource.get "isAvailable"
         @switchStateTo 'harvest'
-      else if not @targetResource.isAvailableSoon()
-        nextResource = @targetResource.getClosestAvailableResource()
+      else if not @targetResource.get "isAvailableSoon"
+        nextResource = @targetResource.get "getClosestAvailableResource"
         @say 'changeTargetResource', nextResource if nextResource
 
     messages:
@@ -207,7 +227,7 @@ class SCSim.Harvester extends SCSim.Actor
     messages:
       finishedMining: ->
         @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
-        @switchStateTo 'approachDropOff', @targetResource.base
+        @switchStateTo 'approachDropOff', @targetResource.get "base"
 
   @state "approachDropOff"
     update: (base) ->

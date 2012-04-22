@@ -12,7 +12,7 @@ runSim = (workerCount, simLength = 600) ->
   sim.logger.fwatchFor 'doneBuildUnit',
      (e) -> (tickToDate e.time.sec)
 
-  base = sim.createActor SCSim.PrimaryStructure
+  base = sim.createActor2 "nexus"
   sim.say 'start'
   base.say('buildUnit', 'probe') for i in [1..workerCount]
   sim.update() for i in [1..simTickLength]

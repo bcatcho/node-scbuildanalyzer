@@ -101,24 +101,30 @@ class SCSim.Actor
 class SCSim.Behavior
   constructor: (defaultStateName = "default") ->
     @currentState
-    @currentTransitions
+    @messages
     @switchStateTo defaultStateName
+
+  update: (t) -> @currentState(t)
 
   switchStateTo: (sn,a,b,c,d) ->
     @stateName = sn
-    @currentState = @["state_#{@stateName}"].update.call @, a,b,c,d
-    @currentTransitions = @["state_#{@stateName}"].messages
-    @["state_#{@stateName}"].enterState?.call @, a, b, c, d
+    @currentState = @states[@stateName].update.call @, a,b,c,d
+    @messages = @states[@stateName].messages
+    @states[@stateName].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
     @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
-    @currentTransitions[msgName]?.call @, a, b, c, d
+    @messages[msgName]?.call @, a, b, c, d
 
-  @state: (args...) ->
-    @::["state_#{args[0]}"] = args[1]
+  @state: (name, stateObj) ->
+    if not @::states
+      @::states = {}
+    @::states[name] = stateObj
 
-  @defaultState: (obj) ->
-    @::["state_default"] = obj
+  @defaultState: (stateObj) ->
+    if not @::states
+      @::states = {}
+    @::states["default"] = stateObj
 
   isExpired: (t) -> t <= 0
 
@@ -126,19 +132,37 @@ class SCSim.Behavior
     endTime = @time.sec + timeSpan
     (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
 
+  # convienience method for states with no update loop
+  @noopUpdate: -> ->
 
 
-class SCSim.Actor2 extends SCSim.Actor
-  constructor: (behaviors...) ->
-    @behaviors = (new b(@) for b in behaviors)
-    super()
+class SCSim.Actor2
+  constructor: (behaviors, a, b, c, d) ->
+    @behaviors = {}
+    for bName in behaviors
+      behavior = new SCSim[bName] a, b, c, d
+      behavior.actor = @
+      @behaviors[bName] = behavior
+
+  instantiate: ->
+    for n, behavior of @behaviors
+      behavior.simId = @simId
+      behavior.logger = @logger
+      behavior.time = @time
+      behavior.sim = @sim
+      behavior.instantiate?()
 
   update: (t) ->
-    b.update(t) for b in @behaviors
+    b.update(t) for n, b of @behaviors
 
   say: (msgName, a, b, c, d) ->
     @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
-    for b in @behaviors
-      b.messages[msgName]?.call b, a, b, c, d
+    for n, behavior of @behaviors
+      behavior.messages[msgName]?.call behavior, a, b, c, d
 
-
+  get: (name, a, b, c, d) ->
+    for n, behavior of @behaviors
+      if behavior[name] isnt undefined
+        return behavior[name].call behavior, a, b, c, d
+    
+    console.warn("failed to get #{prop}")

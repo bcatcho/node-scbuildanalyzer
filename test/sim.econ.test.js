@@ -46,20 +46,6 @@
     });
     return describe('When the base creates a new worker', function() {
       base.say('buildUnit', 'probe');
-      it('should _not yet_ have another subActor that is a Simulation::Worker', function() {
-        var filter;
-        filter = function(a) {
-          return a instanceof SCSim.Harvester;
-        };
-        return _(sim.subActors).filter(filter).length.should.equal(6);
-      });
-      it('but after update(build time) it should have a Worker subActor', function() {
-        var i, _i;
-        for (i = _i = 1; _i <= 100; i = ++_i) {
-          sim.update();
-        }
-        return _(sim.subActors).containsInstanceOf(SCSim.Harvester).should.equal(true);
-      });
       return it('the base should receive minerals after some time', function() {
         var i, _i;
         for (i = _i = 1; _i <= 50; i = ++_i) {

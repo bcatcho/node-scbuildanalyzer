@@ -15,21 +15,6 @@ How will we add buildings into the build order decision tree?
 - A simple dictionary of (time, building) pairs should be good
 
 ## Initial prototype decisions
-- Stop building workers @ **75**
-- Build supply when there is 3 left.
-- Build priority: **workers > supply > tech**
-   - Don't cut workers for anything until worker cap.
-   - Don't cut supply for building anything but workers. 
-- No units besides workers for now. Only buildings.
-- No upgrades either.
-- No add-ons
-- only **protoss**
-
-## What will the graph show?
-- Y axis: Total min, total gas
-- X axis: when important structers were built.
-   - supply
-   - buildings
 
 ## Modeling Worker Mineral Collection
 More Research: [http://wiki.teamliquid.net/starcraft2/Protoss_Unit_Statistics][http://wiki.teamliquid.net/starcraft2/Protoss_Unit_Statistics]
@@ -37,3 +22,27 @@ Some research:[http://wiki.teamliquid.net/starcraft2/Mining**Minerals][some rese
 - Mineral patches are the bottleneck
   The first two workers on a patch will collect 40 min/sec, the 3rd will collect 20.
   3 workers per patch is all a patch can sustain due to travel time.
+
+## Design Scratchpad
+
+Actor
+   behaviors *
+
+Behavior
+   properties *
+   states *
+   methods *
+
+State
+   updateLoop
+   messages *
+
+
+Actors have no properties/methods by default
+
+Actor.say
+   Tell one of the behaviors something
+   This may be a method on the behavior or one of it's properties
+
+Actor.get
+   get the result of a method or property

@@ -3,18 +3,22 @@ SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
 # Unit Obj Helper
-u = (min, gas, buildTime, supply, actor) ->
+u = (min, gas, buildTime, supply, behaviors...) ->
   min: min
   gas: gas
   buildTime: buildTime
   supply: supply
-  actor: () -> SCSim[actor]
+  behaviors: behaviors
 
 # Building Obj Helper
-b = (min, gas, buildTime) ->
+b = (min, gas, buildTime, behaviors...) ->
   min: min
   gas: gas
   buildTime: buildTime
+  behaviors: behaviors
+
+n = (behaviors...) ->
+  behaviors: behaviors
 
 SCSim.config =
   secsPerTick: .1
@@ -26,5 +30,9 @@ SCSim.data =
 
   buildings:
     pylon: b 100, 0, 25
+    nexus: b 400, 0, 100, "PrimaryStructure", "Trainer"
+
+  neutral:
+    minPatch: n "MinPatch"
 
 

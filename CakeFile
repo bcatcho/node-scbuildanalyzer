@@ -18,3 +18,19 @@ task 'run:sim', 'view the Simuation in google chrome', (options) ->
   chrome = spawn 'open', ['-a', 'Google Chrome', 'http://localhost:8081']
   node = spawn 'node', ['server.js']
   node.stdout.on 'data', (data) -> console.log data.toString().trim()
+
+task 'dev', 'continuously build while developing and run the server', ->
+  flags = '-cw'
+  coffee = spawn 'coffee', [flags, '-o', 'pub/js/', 'coffee/']
+  coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
+  
+  coffee = spawn 'coffee', [flags, '-o', 'test/', 'test/']
+  coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
+  
+  chrome = spawn 'open', ['-a', 'Google Chrome', 'http://localhost:8081']
+  node = spawn 'node', ['server.js']
+  node.stdout.on 'data', (data) -> console.log data.toString().trim()
+  
+  spawn 'open', ['-a', 'Google Chrome', 'test/jasmine/SpecRunner.html']
+
+  
