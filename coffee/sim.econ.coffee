@@ -6,11 +6,11 @@ SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
 
-SCSim.EconSim = class EconSim extends SCSim.SimActor
+class SCSim.Simulation extends SCSim.Actor
   constructor: ->
     @subActors = {}
-    @logger = new SCSim.SimEventLog
-    @time = new SCSim.SimTimer
+    @logger = new SCSim.EventLog
+    @time = new SCSim.SimTime
     super()
 
   createActor: (actr, a, b, c, d) ->
@@ -38,7 +38,16 @@ SCSim.EconSim = class EconSim extends SCSim.SimActor
       @subActors[actr].update(@time.sec) for actr of @subActors
 
 
-SCSim.SimBase = class SimBase extends SCSim.SimActor
+
+class SCSim.Trainer extends SCSim.Actor
+  constructor: ->
+    @bQueue = []
+    super()
+
+
+
+
+class SCSim.PrimaryStructure extends SCSim.Actor
   constructor: ->
     @mineralAmt = 0
     @mins = []
@@ -47,8 +56,8 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
     super()
 
   instantiate: ->
-    @mins = (@sim.createActor(SimMineralPatch, @) for i in [1..8])
-    @workers = @sim.createActor(SCSim.SimWorker, @) for i in [1..6]
+    @mins = (@sim.createActor(SCSim.MinPatch, @) for i in [1..8])
+    @workers = @sim.createActor(SCSim.Harvester, @) for i in [1..6]
     @rallyResource = @mins[0]
     wrkr.say 'gatherFromMinPatch', @rallyResource for wrkr in @workers
 
@@ -74,7 +83,10 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
 
       buildUnit: (unitName) ->
         u = SCSim.data.units[unitName]
-        @buildQueue.push {startTime: @time.sec, buildTime: u.buildTime, unitName: unitName}
+        @buildQueue.push
+          startTime: @time.sec
+          buildTime: u.buildTime
+          unitName: unitName
 
       doneBuildUnit: (unitName) ->
         unit = @sim.createActor SCSim.data.units[unitName].actor()
@@ -84,7 +96,7 @@ SCSim.SimBase = class SimBase extends SCSim.SimActor
         if @buildQueue.length > 0
           @buildQueue[0].startTime = @time.sec
 
-SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
+class SCSim.MinPatch extends SCSim.Actor
   constructor: (base, startingAmt = 100) ->
     @amt = startingAmt
     @base = base
@@ -131,12 +143,12 @@ SCSim.SimMineralPatch = class SimMineralPatch extends SCSim.SimActor
 
       targetedByHarvester: ->
         @targetedBy += 1
-      
+
       untargetedByHarvester: ->
         @targetedBy -= 1
 
 
-SCSim.SimWorker = class SimWorker extends SCSim.SimActor
+class SCSim.Harvester extends SCSim.Actor
   constructor: ->
     @t_toBase = 2
     @t_toPatch = 2

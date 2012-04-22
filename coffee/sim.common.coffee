@@ -4,7 +4,7 @@ _ = root._ #require underscore
 SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
-SCSim.SimEventLog = class SimEventLog
+class SCSim.EventLog
   constructor: ->
     @events = {}
     @eventsToCollect = {}
@@ -28,8 +28,8 @@ SCSim.SimEventLog = class SimEventLog
     @eventsToCollect[eventName] isnt undefined
 
   log: (e) ->
-    formatter = @eventsToCollect[e.eventName]
-    @events[e.eventName].push(formatter(e)) if formatter
+    formatter = @eventsToCollect[e.name]
+    @events[e.name].push(formatter(e)) if formatter
 
   clear: ->
     @events = {}
@@ -48,7 +48,7 @@ SCSim.SimEventLog = class SimEventLog
       timeOut <= 0
 
 
-SCSim.SimTimer = class SimTimer
+class SCSim.SimTime
   constructor: ->
     @tick = 0
     @sec = 0
@@ -62,7 +62,8 @@ SCSim.SimTimer = class SimTimer
     @tick = 0
     @sec = 0
 
-SCSim.SimActor = class SimActor
+
+class SCSim.Actor
   constructor: (defaultStateName = "default") ->
     @currentState
     @currentTransitions
@@ -75,11 +76,7 @@ SCSim.SimActor = class SimActor
     @["state_#{@stateName}"].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
-    @logger?.log
-      eventName: msgName
-      eventTime: @time
-      simId: @simId
-      args: [a, b, c, d]
+    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
     @currentTransitions[msgName]?.call @, a, b, c, d
 
   update: (t) ->
@@ -99,3 +96,49 @@ SCSim.SimActor = class SimActor
 
   # convienience method for states with no update loop
   @noopUpdate: -> ->
+
+
+class SCSim.Behavior
+  constructor: (defaultStateName = "default") ->
+    @currentState
+    @currentTransitions
+    @switchStateTo defaultStateName
+
+  switchStateTo: (sn,a,b,c,d) ->
+    @stateName = sn
+    @currentState = @["state_#{@stateName}"].update.call @, a,b,c,d
+    @currentTransitions = @["state_#{@stateName}"].messages
+    @["state_#{@stateName}"].enterState?.call @, a, b, c, d
+
+  say: (msgName, a, b, c, d) ->
+    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
+    @currentTransitions[msgName]?.call @, a, b, c, d
+
+  @state: (args...) ->
+    @::["state_#{args[0]}"] = args[1]
+
+  @defaultState: (obj) ->
+    @::["state_default"] = obj
+
+  isExpired: (t) -> t <= 0
+
+  sayAfter: (timeSpan, a, b, c, d) ->
+    endTime = @time.sec + timeSpan
+    (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
+
+
+
+class SCSim.Actor2 extends SCSim.Actor
+  constructor: (behaviors...) ->
+    @behaviors = (new b(@) for b in behaviors)
+    super()
+
+  update: (t) ->
+    b.update(t) for b in @behaviors
+
+  say: (msgName, a, b, c, d) ->
+    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
+    for b in @behaviors
+      b.messages[msgName]?.call b, a, b, c, d
+
+

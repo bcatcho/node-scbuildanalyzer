@@ -25,14 +25,14 @@
 
   SCSim.config.secsPerTick = 1;
 
-  describe('EconSim with one base one worker', function() {
+  describe('Simulation with one base one worker', function() {
     var base, sim;
-    sim = new SCSim.EconSim;
+    sim = new SCSim.Simulation;
     base = null;
-    describe('When told to create a new EconSim::Base', function() {
-      base = sim.createActor(SCSim.SimBase);
-      return it('should have a new EconSim::Base subActor', function() {
-        return _(sim.subActors).containsInstanceOf(SCSim.SimBase).should.equal(true);
+    describe('When told to create a new Simulation::Base', function() {
+      base = sim.createActor(SCSim.PrimaryStructure);
+      return it('should have a new Simulation::Base subActor', function() {
+        return _(sim.subActors).containsInstanceOf(SCSim.PrimaryStructure).should.equal(true);
       });
     });
     describe('When told to start', function() {
@@ -46,10 +46,10 @@
     });
     return describe('When the base creates a new worker', function() {
       base.say('buildUnit', 'probe');
-      it('should _not yet_ have another subActor that is a EconSim::Worker', function() {
+      it('should _not yet_ have another subActor that is a Simulation::Worker', function() {
         var filter;
         filter = function(a) {
-          return a instanceof SCSim.SimWorker;
+          return a instanceof SCSim.Harvester;
         };
         return _(sim.subActors).filter(filter).length.should.equal(6);
       });
@@ -58,7 +58,7 @@
         for (i = _i = 1; _i <= 100; i = ++_i) {
           sim.update();
         }
-        return _(sim.subActors).containsInstanceOf(SCSim.SimWorker).should.equal(true);
+        return _(sim.subActors).containsInstanceOf(SCSim.Harvester).should.equal(true);
       });
       return it('the base should receive minerals after some time', function() {
         var i, _i;
@@ -70,14 +70,14 @@
     });
   });
 
-  describe('EconSim with one base and two workers', function() {
+  describe('Simulation with one base and two workers', function() {
     var base, sim;
-    sim = new SCSim.EconSim;
+    sim = new SCSim.Simulation;
     sim.logger.fwatchFor('workerStartedMining', function(e) {
       return "" + e.simId;
     });
     sim.say('start');
-    base = sim.createActor(SCSim.SimBase);
+    base = sim.createActor(SCSim.PrimaryStructure);
     it('should queue up two workers at base', function() {
       base.say('buildUnit', 'probe');
       base.say('buildUnit', 'probe');
@@ -102,95 +102,6 @@
       }
       console.log(_(sim.logger.event('workerStartedMining')).unique());
       return _(sim.logger.event('workerStartedMining')).unique().length.should.be.above(1);
-    });
-  });
-
-  describe('MineralPatch', function() {
-    it('sets up', function() {
-      var min;
-      min = new SCSim.SimMineralPatch;
-      return min.amt.should.be.a('number');
-    });
-    it('attaches new workers that target it via event', function() {
-      var min;
-      min = new SCSim.SimMineralPatch;
-      min.say('workerArrived', new SCSim.SimWorker);
-      return min.workers.length.should.equal(1);
-    });
-    return it('subtract minerals on mineralsHarvested event', function() {
-      var expectedAmt, min;
-      min = new SCSim.SimMineralPatch;
-      expectedAmt = min.amt - 5;
-      min.say('mineralsHarvested', 5);
-      return min.amt.should.equal(expectedAmt);
-    });
-  });
-
-  describe('Worker.gatherResource()', function() {
-    var base, minPatch, minPatchOriginalAmt, sim, wrkr;
-    sim = new SCSim.EconSim();
-    sim.logger.watchFor(["depositMinerals"]);
-    sim.say('start');
-    wrkr = sim.createActor(SCSim.SimWorker);
-    base = sim.createActor(SCSim.SimBase);
-    minPatch = base.getMostAvailableMinPatch();
-    minPatchOriginalAmt = minPatch.amt;
-    wrkr.say('gatherMinerals', minPatch);
-    describe('first', function() {
-      it('will target the patch specificied by the base', function() {
-        return wrkr.targetResource.should.equal(minPatch);
-      });
-      it('then should start traveling to said patch', function() {
-        return wrkr.stateName.should.equal('approachResource');
-      });
-      it('and should take the right amount of time to get there', function() {
-        var i, travelTime, _i;
-        travelTime = wrkr.t_toPatch;
-        for (i = _i = 0; 0 <= travelTime ? _i <= travelTime : _i >= travelTime; i = 0 <= travelTime ? ++_i : --_i) {
-          sim.update();
-        }
-        return wrkr.stateName.should.not.equal('approachResource');
-      });
-      return it('it should immediately start to mine', function() {
-        return wrkr.stateName.should.equal('harvest');
-      });
-    });
-    describe('then once the mining time is up', function() {
-      it('will start traveling back to base once the mining time is up', function() {
-        var i, travelTime, _i;
-        travelTime = wrkr.t_mine;
-        for (i = _i = 0; 0 <= travelTime ? _i <= travelTime : _i >= travelTime; i = 0 <= travelTime ? ++_i : --_i) {
-          sim.update();
-        }
-        return wrkr.stateName.should.equal('approachDropOff');
-      });
-      it('should have removed minerals from the mineral patch', function() {
-        return minPatch.amt.should.equal(minPatchOriginalAmt - wrkr.collectAmt);
-      });
-      it('should be removed from the mineral\'s worker queueu', function() {
-        return minPatch.workers.should.not.include(wrkr);
-      });
-      return it('should take the right amount of time to get there', function() {
-        var i, _i, _ref;
-        for (i = _i = 0, _ref = wrkr.t_toBase; 0 <= _ref ? _i <= _ref : _i >= _ref; i = 0 <= _ref ? ++_i : --_i) {
-          sim.update();
-        }
-        return wrkr.stateName.should.equal('approachResource');
-      });
-    });
-    describe('when it arrives at the base', function() {
-      it('will deposite the right amount of minerals to the base', function() {
-        return minPatch.base.mineralAmt.should.equal(wrkr.collectAmt);
-      });
-      return it('then goes back to the same mineral patch', function() {
-        wrkr.stateName.should.equal('approachResource');
-        return wrkr.targetResource.should.equal(minPatch);
-      });
-    });
-    return describe('all the while, the event logger', function() {
-      return it("should have heard about the base's new minerals", function() {
-        return sim.logger.event('depositMinerals').length.should.equal(1);
-      });
     });
   });
 

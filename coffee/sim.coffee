@@ -5,14 +5,14 @@ runSim = (workerCount, simLength = 600) ->
   simTickLength = simLength / SCSim.config.secsPerTick
   tickToDate = (t) -> new Date(t * 1000)
 
-  sim = new SCSim.EconSim
+  sim = new SCSim.Simulation
   sim.logger.fwatchFor 'mineralsCollected',
-     (e) -> [e.eventTime.sec, e.args[0]/(e.eventTime.sec/60)]
+     (e) -> [e.time.sec, e.args[0]/(e.time.sec/60)]
      
   sim.logger.fwatchFor 'doneBuildUnit',
-     (e) -> (tickToDate e.eventTime.sec)
+     (e) -> (tickToDate e.time.sec)
 
-  base = sim.createActor SCSim.SimBase
+  base = sim.createActor SCSim.PrimaryStructure
   sim.say 'start'
   base.say('buildUnit', 'probe') for i in [1..workerCount]
   sim.update() for i in [1..simTickLength]
@@ -22,7 +22,7 @@ runSim = (workerCount, simLength = 600) ->
      markings: []
 
   dataFirstPass = []
-  dataChunkTime = 8 * (2 + 2 + 1.5)
+  dataChunkTime = 4 * (2 + 2 + 1.6)
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
 
@@ -35,12 +35,12 @@ runSim = (workerCount, simLength = 600) ->
 
   results.data = ([d.time, perChunkToPerMin(d.amt)] for n, d of dataFirstPass)
 
-  for e in sim.logger.event('doneBuildUnit')
-    results.markings.push
-      xaxis:
-        from: e
-        to: e
-      color: "#edebfb"
+  #for e in sim.logger.event('doneBuildUnit')
+  #  results.markings.push
+  #    xaxis:
+  #      from: e
+  #      to: e
+  #    color: "#edebfb"
 
   return results
 
@@ -56,7 +56,7 @@ options =
 series = []
 
 addSeries = (series, options, workerCount) ->
-  results = runSim workerCount, 2000
+  results = runSim workerCount, 800
   series.push
     data: results.data
     shadowSize: 0
@@ -65,7 +65,7 @@ addSeries = (series, options, workerCount) ->
   options.grid.markings = options.grid.markings.concat results.markings
   {series, options}
 
-{series, options} = addSeries series, options, 100
+{series, options} = addSeries series, options, 14
 {series, options} = addSeries series, options, 4
 
 $.plot $("#placeholder"), series, options

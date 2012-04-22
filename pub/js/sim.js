@@ -7,7 +7,7 @@
   SCSim = root.SCSim;
 
   runSim = function(workerCount, simLength) {
-    var base, d, dataChunkTime, dataFirstPass, e, i, n, perChunkToPerMin, results, sim, simTickLength, tickToDate, time, _i, _j, _k, _l, _len, _len1, _ref, _ref1;
+    var base, d, dataChunkTime, dataFirstPass, e, i, n, perChunkToPerMin, results, sim, simTickLength, tickToDate, time, _i, _j, _k, _len, _ref;
     if (simLength == null) {
       simLength = 600;
     }
@@ -15,14 +15,14 @@
     tickToDate = function(t) {
       return new Date(t * 1000);
     };
-    sim = new SCSim.EconSim;
+    sim = new SCSim.Simulation;
     sim.logger.fwatchFor('mineralsCollected', function(e) {
-      return [e.eventTime.sec, e.args[0] / (e.eventTime.sec / 60)];
+      return [e.time.sec, e.args[0] / (e.time.sec / 60)];
     });
     sim.logger.fwatchFor('doneBuildUnit', function(e) {
-      return tickToDate(e.eventTime.sec);
+      return tickToDate(e.time.sec);
     });
-    base = sim.createActor(SCSim.SimBase);
+    base = sim.createActor(SCSim.PrimaryStructure);
     sim.say('start');
     for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
       base.say('buildUnit', 'probe');
@@ -35,7 +35,7 @@
       markings: []
     };
     dataFirstPass = [];
-    dataChunkTime = 8 * (2 + 2 + 1.5);
+    dataChunkTime = 4 * (2 + 2 + 1.6);
     perChunkToPerMin = function(amt) {
       return amt * (60 / dataChunkTime);
     };
@@ -60,17 +60,6 @@
       }
       return _results;
     })();
-    _ref1 = sim.logger.event('doneBuildUnit');
-    for (_l = 0, _len1 = _ref1.length; _l < _len1; _l++) {
-      e = _ref1[_l];
-      results.markings.push({
-        xaxis: {
-          from: e,
-          to: e
-        },
-        color: "#edebfb"
-      });
-    }
     return results;
   };
 
@@ -89,7 +78,7 @@
 
   addSeries = function(series, options, workerCount) {
     var results;
-    results = runSim(workerCount, 2000);
+    results = runSim(workerCount, 800);
     series.push({
       data: results.data,
       shadowSize: 0,
@@ -104,7 +93,7 @@
     };
   };
 
-  _ref = addSeries(series, options, 100), series = _ref.series, options = _ref.options;
+  _ref = addSeries(series, options, 14), series = _ref.series, options = _ref.options;
 
   _ref1 = addSeries(series, options, 4), series = _ref1.series, options = _ref1.options;
 

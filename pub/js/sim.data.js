@@ -35,7 +35,7 @@
 
   SCSim.data = {
     units: {
-      probe: u(50, 0, 17, 1, "SimWorker")
+      probe: u(50, 0, 17, 1, "Harvester")
     },
     buildings: {
       pylon: b(100, 0, 25)
