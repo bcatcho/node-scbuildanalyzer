@@ -98,7 +98,7 @@ class SCSim.Behavior
     (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
 
   # convienience method for states with no update loop
-  @noopUpdate: -> ->
+  @noopUpdate: -> -> ->
 
 
 class SCSim.Actor

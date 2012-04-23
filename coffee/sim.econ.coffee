@@ -5,7 +5,6 @@ _ = root._ #require underscore
 SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
-
 class SCSim.Simulation extends SCSim.Behavior
   constructor: ->
     @subActors = {}
@@ -30,7 +29,7 @@ class SCSim.Simulation extends SCSim.Behavior
     return @subActors[simId]
 
   @defaultState
-    update: @noopUpdate
+    update: @noopUpdate()
 
     messages:
       start: -> @switchStateTo 'running'
@@ -94,7 +93,7 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @mins[0]
 
   @defaultState
-    update: @noopUpdate
+    update: @noopUpdate()
 
     messages:
       depositMinerals: (minAmt) ->
@@ -168,7 +167,7 @@ class SCSim.Harvester extends SCSim.Behavior
     super 'idle'
 
   @state "idle"
-    update: @noopUpdate
+    update: @noopUpdate()
 
     messages:
       gatherMinerals: (minPatch) ->

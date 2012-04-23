@@ -175,7 +175,9 @@
     };
 
     Behavior.noopUpdate = function() {
-      return function() {};
+      return function() {
+        return function() {};
+      };
     };
 
     return Behavior;

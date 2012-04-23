@@ -45,7 +45,7 @@
     };
 
     Simulation.defaultState({
-      update: Simulation.noopUpdate,
+      update: Simulation.noopUpdate(),
       messages: {
         start: function() {
           return this.switchStateTo('running');
@@ -172,7 +172,7 @@
     };
 
     PrimaryStructure.defaultState({
-      update: PrimaryStructure.noopUpdate,
+      update: PrimaryStructure.noopUpdate(),
       messages: {
         depositMinerals: function(minAmt) {
           this.mineralAmt += minAmt;
@@ -286,7 +286,7 @@
     }
 
     Harvester.state("idle", {
-      update: Harvester.noopUpdate,
+      update: Harvester.noopUpdate(),
       messages: {
         gatherMinerals: function(minPatch) {
           return this.say('gatherFromMinPatch', minPatch);
