@@ -22,7 +22,7 @@
     sim.logger.fwatchFor('doneBuildUnit', function(e) {
       return tickToDate(e.time.sec);
     });
-    base = sim.createActor2("nexus");
+    base = sim.makeActor("nexus");
     sim.say('start');
     for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
       base.say('buildUnit', 'probe');

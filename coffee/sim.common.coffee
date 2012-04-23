@@ -63,41 +63,6 @@ class SCSim.SimTime
     @sec = 0
 
 
-class SCSim.Actor
-  constructor: (defaultStateName = "default") ->
-    @currentState
-    @currentTransitions
-    @switchStateTo defaultStateName
-
-  switchStateTo: (sn,a,b,c,d) ->
-    @stateName = sn
-    @currentState = @["state_#{@stateName}"].update.call @, a,b,c,d
-    @currentTransitions = @["state_#{@stateName}"].messages
-    @["state_#{@stateName}"].enterState?.call @, a, b, c, d
-
-  say: (msgName, a, b, c, d) ->
-    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
-    @currentTransitions[msgName]?.call @, a, b, c, d
-
-  update: (t) ->
-    @currentState(t)
-
-  @state: (args...) ->
-    @::["state_#{args[0]}"] = args[1]
-
-  @defaultState: (obj) ->
-    @::["state_default"] = obj
-
-  isExpired: (t) -> t <= 0
-
-  sayAfter: (timeSpan, a, b, c, d) ->
-    endTime = @time.sec + timeSpan
-    (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
-
-  # convienience method for states with no update loop
-  @noopUpdate: -> ->
-
-
 class SCSim.Behavior
   constructor: (defaultStateName = "default") ->
     @currentState
@@ -136,7 +101,7 @@ class SCSim.Behavior
   @noopUpdate: -> ->
 
 
-class SCSim.Actor2
+class SCSim.Actor
   constructor: (behaviors, a, b, c, d) ->
     @behaviors = {}
     for bName in behaviors

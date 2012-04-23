@@ -6,28 +6,18 @@ SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
 
-class SCSim.Simulation extends SCSim.Actor
+class SCSim.Simulation extends SCSim.Behavior
   constructor: ->
     @subActors = {}
     @logger = new SCSim.EventLog
     @time = new SCSim.SimTime
     super()
 
-  createActor: (actr, a, b, c, d) ->
-    instance = new actr a,b,c,d
-    instance.sim = @
-    instance.simId = _.uniqueId()
-    instance.logger = @logger
-    instance.time = @time
-    @subActors[instance.simId] = instance
-    instance.instantiate?()
-    instance
-
-  createActor2: (name, a, b, c, d) ->
+  makeActor: (name, a, b, c, d) ->
     actorData = (SCSim.data.units[name] ||
                   SCSim.data.buildings[name] ||
                   SCSim.data.neutral[name])
-    instance = new SCSim.Actor2 actorData.behaviors, a,b,c,d
+    instance = new SCSim.Actor actorData.behaviors, a,b,c,d
     instance.sim = @
     instance.simId = _.uniqueId()
     instance.logger = @logger
@@ -75,7 +65,7 @@ class SCSim.Trainer extends SCSim.Behavior
           unitName: unitName
 
       doneBuildUnit: (unitName) ->
-        unit = @sim.createActor2 unitName
+        unit = @sim.makeActor unitName
         # FIXME what to do on build should be outside of this behavior?
         unit.say 'gatherFromMinPatch', @actor.get "rallyResource"
 
@@ -94,8 +84,8 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
   rallyResource: -> @_rallyResource
 
   instantiate: ->
-    @mins = (@sim.createActor2("minPatch", @) for i in [1..8])
-    @workers = @sim.createActor2("probe") for i in [1..6]
+    @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
+    @workers = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @mins[0]
     wrkr.say 'gatherFromMinPatch', @_rallyResource for wrkr in @workers
 

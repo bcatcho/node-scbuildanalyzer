@@ -25,24 +25,10 @@
       Simulation.__super__.constructor.call(this);
     }
 
-    Simulation.prototype.createActor = function(actr, a, b, c, d) {
-      var instance;
-      instance = new actr(a, b, c, d);
-      instance.sim = this;
-      instance.simId = _.uniqueId();
-      instance.logger = this.logger;
-      instance.time = this.time;
-      this.subActors[instance.simId] = instance;
-      if (typeof instance.instantiate === "function") {
-        instance.instantiate();
-      }
-      return instance;
-    };
-
-    Simulation.prototype.createActor2 = function(name, a, b, c, d) {
+    Simulation.prototype.makeActor = function(name, a, b, c, d) {
       var actorData, instance;
       actorData = SCSim.data.units[name] || SCSim.data.buildings[name] || SCSim.data.neutral[name];
-      instance = new SCSim.Actor2(actorData.behaviors, a, b, c, d);
+      instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
       instance.sim = this;
       instance.simId = _.uniqueId();
       instance.logger = this.logger;
@@ -83,7 +69,7 @@
 
     return Simulation;
 
-  })(SCSim.Actor);
+  })(SCSim.Behavior);
 
   SCSim.Trainer = (function(_super) {
 
@@ -124,7 +110,7 @@
         },
         doneBuildUnit: function(unitName) {
           var unit;
-          unit = this.sim.createActor2(unitName);
+          unit = this.sim.makeActor(unitName);
           unit.say('gatherFromMinPatch', this.actor.get("rallyResource"));
           this.buildQueue = this.buildQueue.slice(1);
           if (this.buildQueue.length > 0) {
@@ -161,12 +147,12 @@
         var _i, _results;
         _results = [];
         for (i = _i = 1; _i <= 8; i = ++_i) {
-          _results.push(this.sim.createActor2("minPatch", this));
+          _results.push(this.sim.makeActor("minPatch", this));
         }
         return _results;
       }).call(this);
       for (i = _i = 1; _i <= 6; i = ++_i) {
-        this.workers = this.sim.createActor2("probe");
+        this.workers = this.sim.makeActor("probe");
       }
       this._rallyResource = this.mins[0];
       _ref1 = this.workers;

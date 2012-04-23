@@ -12,17 +12,6 @@
 
   _ = root._;
 
-  _.mixin({
-    containsInstanceOf: function(collection, theType) {
-      if (_(collection).isObject()) {
-        collection = _(collection).values();
-      }
-      return _(collection).any(function(i) {
-        return i instanceof theType;
-      });
-    }
-  });
-
   SCSim.config.secsPerTick = 1;
 
   describe('Simulation with one base one worker', function() {
@@ -30,10 +19,7 @@
     sim = new SCSim.Simulation;
     base = null;
     describe('When told to create a new Simulation::Base', function() {
-      base = sim.createActor(SCSim.PrimaryStructure);
-      return it('should have a new Simulation::Base subActor', function() {
-        return _(sim.subActors).containsInstanceOf(SCSim.PrimaryStructure).should.equal(true);
-      });
+      return base = sim.makeActor("nexus");
     });
     describe('When told to start', function() {
       it('should change state to running', function() {
@@ -51,7 +37,7 @@
         for (i = _i = 1; _i <= 50; i = ++_i) {
           sim.update();
         }
-        return base.mineralAmt.should.be.above(0);
+        return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
       });
     });
   });
@@ -63,19 +49,18 @@
       return "" + e.simId;
     });
     sim.say('start');
-    base = sim.createActor(SCSim.PrimaryStructure);
+    base = sim.makeActor("nexus");
     it('should queue up two workers at base', function() {
       base.say('buildUnit', 'probe');
       base.say('buildUnit', 'probe');
       base.say('buildUnit', 'probe');
-      sim.update();
-      return base.buildQueue.length.should.equal(3);
+      return base.behaviors["Trainer"].buildQueue.length.should.equal(3);
     });
     it('will make the first worker harvest while the 2nd builds', function() {
-      while (base.buildQueue.length > 0) {
+      while (base.behaviors["Trainer"].buildQueue.length > 0) {
         sim.update();
       }
-      return base.mineralAmt.should.be.above(0);
+      return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
     });
     return it('will distribute the workers amongst two mineral patches', function() {
       var i, timeOut, _i;

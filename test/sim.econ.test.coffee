@@ -6,12 +6,6 @@ should = chai.should()
 SCSim = root.SCSim
 _ = root._
 
-# underscore extensions
-_.mixin
-  containsInstanceOf: (collection, theType) ->
-    if _(collection).isObject() then collection = _(collection).values()
-    _(collection).any (i) -> i instanceof(theType)
-
 #configure
 SCSim.config.secsPerTick = 1 # to speed up tests
 
@@ -21,11 +15,8 @@ describe 'Simulation with one base one worker', ->
   base = null
 
   describe 'When told to create a new Simulation::Base', ->
-    base = sim.createActor SCSim.PrimaryStructure
+    base = sim.makeActor "nexus"
 
-    it 'should have a new Simulation::Base subActor', ->
-      _(sim.subActors).containsInstanceOf(SCSim.PrimaryStructure).should.equal true
-    
   describe 'When told to start', ->
     it 'should change state to running', ->
       sim.say 'start'
@@ -39,24 +30,23 @@ describe 'Simulation with one base one worker', ->
 
     it 'the base should receive minerals after some time', ->
       sim.update() for i in [1..50]
-      base.mineralAmt.should.be.above 0
+      base.behaviors["PrimaryStructure"].mineralAmt.should.be.above 0
 
 describe 'Simulation with one base and two workers', ->
   sim = new SCSim.Simulation
   sim.logger.fwatchFor 'workerStartedMining', (e) -> "#{e.simId}"
   sim.say 'start'
-  base = sim.createActor SCSim.PrimaryStructure
+  base = sim.makeActor "nexus"
 
   it 'should queue up two workers at base', ->
     base.say 'buildUnit', 'probe'
     base.say 'buildUnit', 'probe'
     base.say 'buildUnit', 'probe'
-    sim.update()
-    base.buildQueue.length.should.equal 3
+    base.behaviors["Trainer"].buildQueue.length.should.equal 3
 
   it 'will make the first worker harvest while the 2nd builds', ->
-    sim.update() while base.buildQueue.length > 0
-    base.mineralAmt.should.be.above 0
+    sim.update() while base.behaviors["Trainer"].buildQueue.length > 0
+    base.behaviors["PrimaryStructure"].mineralAmt.should.be.above 0
 
   it 'will distribute the workers amongst two mineral patches', ->
     timeOut = 200
