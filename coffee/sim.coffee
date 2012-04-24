@@ -22,7 +22,7 @@ runSim = (workerCount, simLength = 600) ->
      markings: []
 
   dataFirstPass = []
-  dataChunkTime = 4 * (2 + 2 + 1.6) # TODO make config setting
+  dataChunkTime = 4 * (2 + 2 + 1.57) # TODO make config setting, this just happens to look cool
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
 

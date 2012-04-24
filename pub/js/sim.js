@@ -35,7 +35,7 @@
       markings: []
     };
     dataFirstPass = [];
-    dataChunkTime = 4 * (2 + 2 + 1.6);
+    dataChunkTime = 4 * (2 + 2 + 1.57);
     perChunkToPerMin = function(amt) {
       return amt * (60 / dataChunkTime);
     };

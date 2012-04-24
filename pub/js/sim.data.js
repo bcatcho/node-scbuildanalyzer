@@ -42,7 +42,7 @@
 
   SCSim.config = {
     secsPerTick: .1,
-    workerOverlapThreshold: .4
+    workerOverlapThreshold: .3
   };
 
   SCSim.data = {
