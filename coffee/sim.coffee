@@ -22,7 +22,7 @@ runSim = (workerCount, simLength = 600) ->
      markings: []
 
   dataFirstPass = []
-  dataChunkTime = 4 * (2 + 2 + 1.6)
+  dataChunkTime = 4 * (2 + 2 + 1.6) # TODO make config setting
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
 
@@ -32,15 +32,7 @@ runSim = (workerCount, simLength = 600) ->
       dataFirstPass[time] = {time: tickToDate(time * dataChunkTime),  amt: 0}
     dataFirstPass[time].amt += 5
 
-
   results.data = ([d.time, perChunkToPerMin(d.amt)] for n, d of dataFirstPass)
-
-  #for e in sim.logger.event('doneBuildUnit')
-  #  results.markings.push
-  #    xaxis:
-  #      from: e
-  #      to: e
-  #    color: "#edebfb"
 
   return results
 
