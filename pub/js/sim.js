@@ -11,6 +11,7 @@
     if (simLength == null) {
       simLength = 600;
     }
+    console.profile();
     simTickLength = simLength / SCSim.config.secsPerTick;
     tickToDate = function(t) {
       return new Date(t * 1000);
@@ -25,7 +26,7 @@
     base = sim.makeActor("nexus");
     sim.say('start');
     for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
-      base.say('buildUnit', 'probe');
+      base.say("trainUnit", 'probe');
     }
     for (i = _j = 1; 1 <= simTickLength ? _j <= simTickLength : _j >= simTickLength; i = 1 <= simTickLength ? ++_j : --_j) {
       sim.update();
@@ -60,6 +61,7 @@
       }
       return _results;
     })();
+    console.profileEnd();
     return results;
   };
 

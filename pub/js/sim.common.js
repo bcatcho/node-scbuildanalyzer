@@ -118,19 +118,19 @@
       }
       this.currentState;
       this.messages;
-      this.switchStateTo(defaultStateName);
+      this.go(defaultStateName);
     }
 
     Behavior.prototype.update = function(t) {
-      return this.currentState(t);
+      return typeof this.currentState === "function" ? this.currentState(t) : void 0;
     };
 
-    Behavior.prototype.switchStateTo = function(sn, a, b, c, d) {
-      var _ref1;
+    Behavior.prototype.go = function(sn, a, b, c, d) {
+      var _ref1, _ref2;
       this.stateName = sn;
-      this.currentState = this.states[this.stateName].update.call(this, a, b, c, d);
+      this.currentState = (_ref1 = this.states[this.stateName].update) != null ? _ref1.call(this, a, b, c, d) : void 0;
       this.messages = this.states[this.stateName].messages;
-      return (_ref1 = this.states[this.stateName].enterState) != null ? _ref1.call(this, a, b, c, d) : void 0;
+      return (_ref2 = this.states[this.stateName].enterState) != null ? _ref2.call(this, a, b, c, d) : void 0;
     };
 
     Behavior.prototype.say = function(msgName, a, b, c, d) {
@@ -174,12 +174,6 @@
       };
     };
 
-    Behavior.noopUpdate = function() {
-      return function() {
-        return function() {};
-      };
-    };
-
     return Behavior;
 
   })();
@@ -189,15 +183,20 @@
     Actor.name = 'Actor';
 
     function Actor(behaviors, a, b, c, d) {
-      var bName, behavior, _i, _len;
+      var bName, _i, _len;
       this.behaviors = {};
       for (_i = 0, _len = behaviors.length; _i < _len; _i++) {
         bName = behaviors[_i];
-        behavior = new SCSim[bName](a, b, c, d);
-        behavior.actor = this;
-        this.behaviors[bName] = behavior;
+        this.addBehavior(bName, a, b, c, d);
       }
     }
+
+    Actor.prototype.addBehavior = function(bName, a, b, c, d) {
+      var behavior;
+      behavior = new SCSim[bName](a, b, c, d);
+      behavior.actor = this;
+      return this.behaviors[bName] = behavior;
+    };
 
     Actor.prototype.instantiate = function() {
       var behavior, n, _ref1, _results;

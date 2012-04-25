@@ -29,10 +29,8 @@ class SCSim.Simulation extends SCSim.Behavior
     return @subActors[simId]
 
   @defaultState
-    update: @noopUpdate()
-
     messages:
-      start: -> @switchStateTo 'running'
+      start: -> @go "running"
 
   @state "running"
     update: -> (t) ->
@@ -49,24 +47,24 @@ class SCSim.Trainer extends SCSim.Behavior
     if @buildQueue.length > 0
       unit = @buildQueue[0]
       if @isExpired (unit.buildTime - (@time.sec - unit.startTime))
-        @say 'doneBuildUnit', unit.unitName
+        @say "trainUnitComplete", unit.unitName
 
   @defaultState
     update: -> ->
       @updateBuildQueue()
 
     messages:
-      buildUnit: (unitName) ->
+      trainUnit: (unitName) ->
         u = SCSim.data.units[unitName]
         @buildQueue.push
           startTime: @time.sec
           buildTime: u.buildTime
           unitName: unitName
 
-      doneBuildUnit: (unitName) ->
+      trainUnitComplete: (unitName) ->
         unit = @sim.makeActor unitName
         # FIXME what to do on build should be outside of this behavior?
-        unit.say 'gatherFromMinPatch', @actor.get "rallyResource"
+        unit.say "gatherFromResource", @actor.get "rallyResource"
 
         @buildQueue = @buildQueue[1..]
         if @buildQueue.length > 0
@@ -86,20 +84,18 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
     @workers = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @mins[0]
-    wrkr.say 'gatherFromMinPatch', @_rallyResource for wrkr in @workers
+    wrkr.say "gatherFromResource", @_rallyResource for wrkr in @workers
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.targetedBy
     @mins[0]
 
   @defaultState
-    update: @noopUpdate()
-
     messages:
       depositMinerals: (minAmt) ->
         @mineralAmt += minAmt
         # TODO this is for logging purposes. do something about this
-        @say 'mineralsCollected', @mineralAmt
+        @say "mineralsCollected", @mineralAmt
 
 
 class SCSim.MinPatch extends SCSim.Behavior
@@ -116,38 +112,36 @@ class SCSim.MinPatch extends SCSim.Behavior
   targetedBy: -> @_targetedBy
 
   getClosestAvailableResource: ->
-    sortedMins = _(@_base.mins).sortBy (m) -> m.get 'targetedBy'
+    sortedMins = _(@_base.mins).sortBy (m) -> m.get "targetedBy"
     for m in sortedMins when m isnt @
       return m
 
   isAvailable: ->
     @workerMining == null
 
-  isAvailableSoon: (wrkr) ->
+  isAvailableSoon: (harvester) ->
     (@workerMiningTimeDone - @time.sec < @workerOverlapThreshold)
 
   @defaultState
-    update: @noopUpdate
-
     messages:
-      workerArrived: (wrkr) ->
-        @workers.push wrkr
+      workerArrived: (harvester) ->
+        @workers.push harvester
 
       mineralsHarvested: (amtHarvested) ->
         @amt -= amtHarvested
 
-      workerStartedMining: (wrkr, timeMiningDone) ->
+      harvestBegan: (harvester, timeMiningDone) ->
         @workerMiningTimeDone = timeMiningDone
-        @workerMining = wrkr
+        @workerMining = harvester
 
-      workerFinishedMiningXminerals: (wrkr, amtMined) ->
+      harvestComplete: (harvester, amtMined) ->
         @workerMining = null
         @workers = _(@workers).rest()
         @amt -= amtMined
 
-      workerCanceledHarvest: (wrkr) ->
-        @workers = _(@workers).without(wrkr)
-        if @workerMining is wrkr
+      harvestAborted: (harvester) ->
+        @workers = _(@workers).without(harvester)
+        if @workerMining is harvester
           @workerMining = null
 
       targetedByHarvester: ->
@@ -164,75 +158,69 @@ class SCSim.Harvester extends SCSim.Behavior
     @t_mine = 1.5
     @targetResource
     @collectAmt = 5
-    super 'idle'
+    super "idle"
 
   @state "idle"
-    update: @noopUpdate()
-
     messages:
-      gatherMinerals: (minPatch) ->
-        @say 'gatherFromMinPatch', minPatch
-
-      gatherFromMinPatch: (minPatch) ->
-        @targetResource = minPatch
-        @targetResource.say 'targetedByHarvester'
-        @switchStateTo 'approachResource'
+      gatherFromResource: (resource) ->
+        @targetResource = resource
+        @targetResource.say "targetedByHarvester"
+        @go "approachResource"
 
   @state "approachResource"
     update: ->
-      @sayAfter @t_toBase, 'arrivedAtMinPatch'
+      @sayAfter @t_toBase, "resourceReached"
 
     messages:
-      arrivedAtMinPatch: ->
-        @targetResource.say 'workerArrived', @
-        @switchStateTo 'waitAtResource'
+      resourceReached: ->
+        @targetResource.say "workerArrived", @
+        @go "waitAtResource"
 
   @state "waitAtResource"
     update: -> ->
-      @switchStateTo 'harvest' if @targetResource.get "isAvailable"
+      # FIXME breakes "dont switch state in update loop convention?"
+      @go "harvest" if @targetResource.get "isAvailable"
 
     enterState: ->
       if @targetResource.get "isAvailable"
-        @switchStateTo 'harvest'
+        @go "harvest"
       else if not @targetResource.get "isAvailableSoon"
         nextResource = @targetResource.get "getClosestAvailableResource"
-        @say 'changeTargetResource', nextResource if nextResource
+        @say "changeTargetResource", nextResource if nextResource
 
     messages:
       changeTargetResource: (newResource) ->
-        @targetResource.say 'workerCanceledHarvest', @
-        @targetResource.say 'untargetedByHarvester'
+        @targetResource.say "harvestAborted", @
+        @targetResource.say "untargetedByHarvester"
         @targetResource = newResource
-        @targetResource.say 'targetedByHarvester'
-        @switchStateTo 'approachResource'
+        @targetResource.say "targetedByHarvester"
+        @go "approachResource"
 
   @state "harvest"
     update: ->
-      @sayAfter @t_mine, 'finishedMining'
+      @sayAfter @t_mine, "harvestComplete"
 
     enterState: ->
-      @targetResource.say 'workerStartedMining', @, @time.sec + @t_mine
+      @targetResource.say "harvestBegan", @, @time.sec + @t_mine
 
     messages:
-      finishedMining: ->
-        @targetResource.say 'workerFinishedMiningXminerals', @, @collectAmt
-        @switchStateTo 'approachDropOff', @targetResource.get "base"
+      harvestComplete: ->
+        @targetResource.say "harvestComplete", @, @collectAmt
+        @go "approachDropOff", @targetResource.get "base"
 
   @state "approachDropOff"
-    update: (base) ->
-      @sayAfter @t_toBase, 'arrivedAtBase', base
+    update: (dropOff) ->
+      @sayAfter @t_toBase, "dropOffReached", dropOff
 
     messages:
-      arrivedAtBase: (base) ->
-        @switchStateTo 'dropOff', base
+      dropOffReached: (dropOff) ->
+        @go "dropOff", dropOff
 
   @state "dropOff"
-    update: @noopUpdate
-
-    enterState: (base) ->
-      base.say 'depositMinerals', @collectAmt
-      @say 'finishedDropOff', base
+    enterState: (dropOff) ->
+      dropOff.say "depositMinerals", @collectAmt
+      @say "dropOffComplete", dropOff
 
     messages:
-      finishedDropOff: (base) ->
-        @switchStateTo 'approachResource'
+      dropOffComplete: (dropOff) ->
+        @go "approachResource"

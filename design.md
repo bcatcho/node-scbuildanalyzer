@@ -76,6 +76,13 @@ For example
 ## TODO
 
 - Conventions on when to "say" something to yourself, as an object. This affects logging
+  
+  Thought: never do anything interesting in the update loop, just check the need for a state change?
+  
+  Or: Only do state changes outside of the update loop. Say 'X' to switch to state X.
+  
+  Only: Say when other objects are involved?
+
 
 ## Optimisations
 

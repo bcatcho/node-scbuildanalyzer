@@ -67,13 +67,14 @@ class SCSim.Behavior
   constructor: (defaultStateName = "default") ->
     @currentState
     @messages
-    @switchStateTo defaultStateName
+    @go defaultStateName
 
-  update: (t) -> @currentState(t)
+  update: (t) -> 
+    @currentState?(t)
 
-  switchStateTo: (sn,a,b,c,d) ->
+  go: (sn,a,b,c,d) ->
     @stateName = sn
-    @currentState = @states[@stateName].update.call @, a,b,c,d
+    @currentState = @states[@stateName].update?.call @, a,b,c,d
     @messages = @states[@stateName].messages
     @states[@stateName].enterState?.call @, a, b, c, d
 
@@ -82,6 +83,8 @@ class SCSim.Behavior
     @messages[msgName]?.call @, a, b, c, d
 
   @state: (name, stateObj) ->
+    # TODO investigate function.bind innstead of using.call so much
+    # are there performance gains?
     if not @::states
       @::states = {}
     @::states[name] = stateObj
@@ -97,17 +100,18 @@ class SCSim.Behavior
     endTime = @time.sec + timeSpan
     (t) -> @say(a,b,c,d) if @isExpired endTime-@time.sec
 
-  # convienience method for states with no update loop
-  @noopUpdate: -> -> ->
-
 
 class SCSim.Actor
   constructor: (behaviors, a, b, c, d) ->
     @behaviors = {}
-    for bName in behaviors
-      behavior = new SCSim[bName] a, b, c, d
-      behavior.actor = @
-      @behaviors[bName] = behavior
+    @addBehavior(bName, a, b, c, d) for bName in behaviors
+
+  addBehavior: (bName, a, b, c, d) ->
+    behavior = new SCSim[bName] a, b, c, d
+    behavior.actor = @
+    @behaviors[bName] = behavior
+    # parse all properties that begin with "pub" or something
+    # and place in a common thing?
 
   instantiate: ->
     for n, behavior of @behaviors

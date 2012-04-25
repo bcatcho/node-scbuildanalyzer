@@ -45,10 +45,9 @@
     };
 
     Simulation.defaultState({
-      update: Simulation.noopUpdate(),
       messages: {
         start: function() {
-          return this.switchStateTo('running');
+          return this.go("running");
         }
       }
     });
@@ -87,7 +86,7 @@
       if (this.buildQueue.length > 0) {
         unit = this.buildQueue[0];
         if (this.isExpired(unit.buildTime - (this.time.sec - unit.startTime))) {
-          return this.say('doneBuildUnit', unit.unitName);
+          return this.say("trainUnitComplete", unit.unitName);
         }
       }
     };
@@ -99,7 +98,7 @@
         };
       },
       messages: {
-        buildUnit: function(unitName) {
+        trainUnit: function(unitName) {
           var u;
           u = SCSim.data.units[unitName];
           return this.buildQueue.push({
@@ -108,10 +107,10 @@
             unitName: unitName
           });
         },
-        doneBuildUnit: function(unitName) {
+        trainUnitComplete: function(unitName) {
           var unit;
           unit = this.sim.makeActor(unitName);
-          unit.say('gatherFromMinPatch', this.actor.get("rallyResource"));
+          unit.say("gatherFromResource", this.actor.get("rallyResource"));
           this.buildQueue = this.buildQueue.slice(1);
           if (this.buildQueue.length > 0) {
             return this.buildQueue[0].startTime = this.time.sec;
@@ -159,7 +158,7 @@
       _results = [];
       for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
         wrkr = _ref1[_j];
-        _results.push(wrkr.say('gatherFromMinPatch', this._rallyResource));
+        _results.push(wrkr.say("gatherFromResource", this._rallyResource));
       }
       return _results;
     };
@@ -172,11 +171,10 @@
     };
 
     PrimaryStructure.defaultState({
-      update: PrimaryStructure.noopUpdate(),
       messages: {
         depositMinerals: function(minAmt) {
           this.mineralAmt += minAmt;
-          return this.say('mineralsCollected', this.mineralAmt);
+          return this.say("mineralsCollected", this.mineralAmt);
         }
       }
     });
@@ -215,7 +213,7 @@
     MinPatch.prototype.getClosestAvailableResource = function() {
       var m, sortedMins, _i, _len;
       sortedMins = _(this._base.mins).sortBy(function(m) {
-        return m.get('targetedBy');
+        return m.get("targetedBy");
       });
       for (_i = 0, _len = sortedMins.length; _i < _len; _i++) {
         m = sortedMins[_i];
@@ -229,31 +227,30 @@
       return this.workerMining === null;
     };
 
-    MinPatch.prototype.isAvailableSoon = function(wrkr) {
+    MinPatch.prototype.isAvailableSoon = function(harvester) {
       return this.workerMiningTimeDone - this.time.sec < this.workerOverlapThreshold;
     };
 
     MinPatch.defaultState({
-      update: MinPatch.noopUpdate,
       messages: {
-        workerArrived: function(wrkr) {
-          return this.workers.push(wrkr);
+        workerArrived: function(harvester) {
+          return this.workers.push(harvester);
         },
         mineralsHarvested: function(amtHarvested) {
           return this.amt -= amtHarvested;
         },
-        workerStartedMining: function(wrkr, timeMiningDone) {
+        harvestBegan: function(harvester, timeMiningDone) {
           this.workerMiningTimeDone = timeMiningDone;
-          return this.workerMining = wrkr;
+          return this.workerMining = harvester;
         },
-        workerFinishedMiningXminerals: function(wrkr, amtMined) {
+        harvestComplete: function(harvester, amtMined) {
           this.workerMining = null;
           this.workers = _(this.workers).rest();
           return this.amt -= amtMined;
         },
-        workerCanceledHarvest: function(wrkr) {
-          this.workers = _(this.workers).without(wrkr);
-          if (this.workerMining === wrkr) {
+        harvestAborted: function(harvester) {
+          this.workers = _(this.workers).without(harvester);
+          if (this.workerMining === harvester) {
             return this.workerMining = null;
           }
         },
@@ -282,31 +279,27 @@
       this.t_mine = 1.5;
       this.targetResource;
       this.collectAmt = 5;
-      Harvester.__super__.constructor.call(this, 'idle');
+      Harvester.__super__.constructor.call(this, "idle");
     }
 
     Harvester.state("idle", {
-      update: Harvester.noopUpdate(),
       messages: {
-        gatherMinerals: function(minPatch) {
-          return this.say('gatherFromMinPatch', minPatch);
-        },
-        gatherFromMinPatch: function(minPatch) {
-          this.targetResource = minPatch;
-          this.targetResource.say('targetedByHarvester');
-          return this.switchStateTo('approachResource');
+        gatherFromResource: function(resource) {
+          this.targetResource = resource;
+          this.targetResource.say("targetedByHarvester");
+          return this.go("approachResource");
         }
       }
     });
 
     Harvester.state("approachResource", {
       update: function() {
-        return this.sayAfter(this.t_toBase, 'arrivedAtMinPatch');
+        return this.sayAfter(this.t_toBase, "resourceReached");
       },
       messages: {
-        arrivedAtMinPatch: function() {
-          this.targetResource.say('workerArrived', this);
-          return this.switchStateTo('waitAtResource');
+        resourceReached: function() {
+          this.targetResource.say("workerArrived", this);
+          return this.go("waitAtResource");
         }
       }
     });
@@ -315,67 +308,66 @@
       update: function() {
         return function() {
           if (this.targetResource.get("isAvailable")) {
-            return this.switchStateTo('harvest');
+            return this.go("harvest");
           }
         };
       },
       enterState: function() {
         var nextResource;
         if (this.targetResource.get("isAvailable")) {
-          return this.switchStateTo('harvest');
+          return this.go("harvest");
         } else if (!this.targetResource.get("isAvailableSoon")) {
           nextResource = this.targetResource.get("getClosestAvailableResource");
           if (nextResource) {
-            return this.say('changeTargetResource', nextResource);
+            return this.say("changeTargetResource", nextResource);
           }
         }
       },
       messages: {
         changeTargetResource: function(newResource) {
-          this.targetResource.say('workerCanceledHarvest', this);
-          this.targetResource.say('untargetedByHarvester');
+          this.targetResource.say("harvestAborted", this);
+          this.targetResource.say("untargetedByHarvester");
           this.targetResource = newResource;
-          this.targetResource.say('targetedByHarvester');
-          return this.switchStateTo('approachResource');
+          this.targetResource.say("targetedByHarvester");
+          return this.go("approachResource");
         }
       }
     });
 
     Harvester.state("harvest", {
       update: function() {
-        return this.sayAfter(this.t_mine, 'finishedMining');
+        return this.sayAfter(this.t_mine, "harvestComplete");
       },
       enterState: function() {
-        return this.targetResource.say('workerStartedMining', this, this.time.sec + this.t_mine);
+        return this.targetResource.say("harvestBegan", this, this.time.sec + this.t_mine);
       },
       messages: {
-        finishedMining: function() {
-          this.targetResource.say('workerFinishedMiningXminerals', this, this.collectAmt);
-          return this.switchStateTo('approachDropOff', this.targetResource.get("base"));
+        harvestComplete: function() {
+          this.targetResource.say("harvestComplete", this, this.collectAmt);
+          return this.go("approachDropOff", this.targetResource.get("base"));
         }
       }
     });
 
     Harvester.state("approachDropOff", {
-      update: function(base) {
-        return this.sayAfter(this.t_toBase, 'arrivedAtBase', base);
+      update: function(dropOff) {
+        return this.sayAfter(this.t_toBase, "dropOffReached", dropOff);
       },
       messages: {
-        arrivedAtBase: function(base) {
-          return this.switchStateTo('dropOff', base);
+        dropOffReached: function(dropOff) {
+          return this.go("dropOff", dropOff);
         }
       }
     });
 
     Harvester.state("dropOff", {
-      update: Harvester.noopUpdate,
-      enterState: function(base) {
-        base.say('depositMinerals', this.collectAmt);
-        return this.say('finishedDropOff', base);
+      enterState: function(dropOff) {
+        dropOff.say("depositMinerals", this.collectAmt);
+        return this.say("dropOffComplete", dropOff);
       },
       messages: {
-        finishedDropOff: function(base) {
-          return this.switchStateTo('approachResource');
+        dropOffComplete: function(dropOff) {
+          return this.go("approachResource");
         }
       }
     });

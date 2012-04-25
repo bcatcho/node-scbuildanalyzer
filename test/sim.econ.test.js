@@ -31,7 +31,7 @@
       });
     });
     return describe('When the base creates a new worker', function() {
-      base.say('buildUnit', 'probe');
+      base.say("trainUnit", 'probe');
       return it('the base should receive minerals after some time', function() {
         var i, _i;
         for (i = _i = 1; _i <= 50; i = ++_i) {
@@ -45,15 +45,15 @@
   describe('Simulation with one base and two workers', function() {
     var base, sim;
     sim = new SCSim.Simulation;
-    sim.logger.fwatchFor('workerStartedMining', function(e) {
+    sim.logger.fwatchFor('harvestBegan', function(e) {
       return "" + e.simId;
     });
     sim.say('start');
     base = sim.makeActor("nexus");
     it('should queue up two workers at base', function() {
-      base.say('buildUnit', 'probe');
-      base.say('buildUnit', 'probe');
-      base.say('buildUnit', 'probe');
+      base.say("trainUnit", 'probe');
+      base.say("trainUnit", 'probe');
+      base.say("trainUnit", 'probe');
       return base.behaviors["Trainer"].buildQueue.length.should.equal(3);
     });
     it('will make the first worker harvest while the 2nd builds', function() {
@@ -71,8 +71,8 @@
       for (i = _i = 1; _i <= 40; i = ++_i) {
         sim.update();
       }
-      console.log(_(sim.logger.event('workerStartedMining')).unique());
-      return _(sim.logger.event('workerStartedMining')).unique().length.should.be.above(1);
+      console.log(_(sim.logger.event('harvestBegan')).unique());
+      return _(sim.logger.event('harvestBegan')).unique().length.should.be.above(1);
     });
   });
 

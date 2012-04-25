@@ -26,7 +26,7 @@ describe 'Simulation with one base one worker', ->
       sim.time.tick.should.equal 0
 
   describe 'When the base creates a new worker', ->
-    base.say 'buildUnit', 'probe'
+    base.say "trainUnit", 'probe'
 
     it 'the base should receive minerals after some time', ->
       sim.update() for i in [1..50]
@@ -34,14 +34,14 @@ describe 'Simulation with one base one worker', ->
 
 describe 'Simulation with one base and two workers', ->
   sim = new SCSim.Simulation
-  sim.logger.fwatchFor 'workerStartedMining', (e) -> "#{e.simId}"
+  sim.logger.fwatchFor 'harvestBegan', (e) -> "#{e.simId}"
   sim.say 'start'
   base = sim.makeActor "nexus"
 
   it 'should queue up two workers at base', ->
-    base.say 'buildUnit', 'probe'
-    base.say 'buildUnit', 'probe'
-    base.say 'buildUnit', 'probe'
+    base.say "trainUnit", 'probe'
+    base.say "trainUnit", 'probe'
+    base.say "trainUnit", 'probe'
     base.behaviors["Trainer"].buildQueue.length.should.equal 3
 
   it 'will make the first worker harvest while the 2nd builds', ->
@@ -53,7 +53,7 @@ describe 'Simulation with one base and two workers', ->
     until sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)
       sim.update()
     sim.update() for i in [1..40]
-    console.log(_(sim.logger.event('workerStartedMining')).unique())
-    _(sim.logger.event('workerStartedMining')).unique().length.should.be.above 1
+    console.log(_(sim.logger.event('harvestBegan')).unique())
+    _(sim.logger.event('harvestBegan')).unique().length.should.be.above 1
 
 
