@@ -4,6 +4,7 @@ _ = root._ #require underscore
 SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
+
 class SCSim.EventLog
   constructor: ->
     @events = {}
@@ -83,8 +84,6 @@ class SCSim.Behavior
     @messages[msgName]?.call @, a, b, c, d
 
   @state: (name, stateObj) ->
-    # TODO investigate function.bind innstead of using.call so much
-    # are there performance gains?
     if not @::states
       @::states = {}
     @::states[name] = stateObj

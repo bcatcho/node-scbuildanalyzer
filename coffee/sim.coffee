@@ -60,6 +60,5 @@ addSeries = (series, options, workerCount) ->
   {series, options}
 
 {series, options} = addSeries series, options, 14
-{series, options} = addSeries series, options, 4
 
 $.plot $("#placeholder"), series, options
