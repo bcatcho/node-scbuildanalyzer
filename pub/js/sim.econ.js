@@ -141,7 +141,7 @@
     };
 
     PrimaryStructure.prototype.instantiate = function() {
-      var i, wrkr, _i, _j, _len, _ref1, _results;
+      var harvester, i, _i, _j, _len, _ref1, _results;
       this.mins = (function() {
         var _i, _results;
         _results = [];
@@ -151,14 +151,14 @@
         return _results;
       }).call(this);
       for (i = _i = 1; _i <= 6; i = ++_i) {
-        this.workers = this.sim.makeActor("probe");
+        this.harvesters = this.sim.makeActor("probe");
       }
       this._rallyResource = this.mins[0];
-      _ref1 = this.workers;
+      _ref1 = this.harvesters;
       _results = [];
       for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-        wrkr = _ref1[_j];
-        _results.push(wrkr.say("gatherFromResource", this._rallyResource));
+        harvester = _ref1[_j];
+        _results.push(harvester.say("gatherFromResource", this._rallyResource));
       }
       return _results;
     };
@@ -196,9 +196,9 @@
       this.amt = startingAmt;
       this._base = base;
       this._targetedBy = 0;
-      this.workers = [];
-      this.workerMining = null;
-      this.workerOverlapThreshold = SCSim.config.workerOverlapThreshold;
+      this.harvesters = [];
+      this.harvesterMining = null;
+      this.harvesterOverlapThreshold = SCSim.config.harvesterOverlapThreshold;
       MinPatch.__super__.constructor.call(this);
     }
 
@@ -224,34 +224,34 @@
     };
 
     MinPatch.prototype.isAvailable = function() {
-      return this.workerMining === null;
+      return this.harvesterMining === null;
     };
 
     MinPatch.prototype.isAvailableSoon = function(harvester) {
-      return this.workerMiningTimeDone - this.time.sec < this.workerOverlapThreshold;
+      return this.harvesterMiningTimeDone - this.time.sec < this.harvesterOverlapThreshold;
     };
 
     MinPatch.defaultState({
       messages: {
-        workerArrived: function(harvester) {
-          return this.workers.push(harvester);
+        harvesterArrived: function(harvester) {
+          return this.harvesters.push(harvester);
         },
         mineralsHarvested: function(amtHarvested) {
           return this.amt -= amtHarvested;
         },
         harvestBegan: function(harvester, timeMiningDone) {
-          this.workerMiningTimeDone = timeMiningDone;
-          return this.workerMining = harvester;
+          this.harvesterMiningTimeDone = timeMiningDone;
+          return this.harvesterMining = harvester;
         },
         harvestComplete: function(harvester, amtMined) {
-          this.workerMining = null;
-          this.workers = _(this.workers).rest();
+          this.harvesterMining = null;
+          this.harvesters = _(this.harvesters).rest();
           return this.amt -= amtMined;
         },
         harvestAborted: function(harvester) {
-          this.workers = _(this.workers).without(harvester);
-          if (this.workerMining === harvester) {
-            return this.workerMining = null;
+          this.harvesters = _(this.harvesters).without(harvester);
+          if (this.harvesterMining === harvester) {
+            return this.harvesterMining = null;
           }
         },
         targetedByHarvester: function() {
@@ -298,7 +298,7 @@
       },
       messages: {
         resourceReached: function() {
-          this.targetResource.say("workerArrived", this);
+          this.targetResource.say("harvesterArrived", this);
           return this.go("waitAtResource");
         }
       }

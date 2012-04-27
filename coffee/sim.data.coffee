@@ -21,8 +21,8 @@ n = (behaviors...) ->
   behaviors: behaviors
 
 SCSim.config =
-  secsPerTick: .1 # FIXME? this affects the precision of worker decisions
-  workerOverlapThreshold: .3 # this number + secs Per Tick is important
+  secsPerTick: .5 # FIXME? this affects the precision of harvester decisions
+  harvesterOverlapThreshold: .3 # this number + secs Per Tick is important
 
 SCSim.data =
   units:

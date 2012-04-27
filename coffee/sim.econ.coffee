@@ -82,9 +82,9 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
 
   instantiate: ->
     @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
-    @workers = @sim.makeActor("probe") for i in [1..6]
+    @harvesters = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @mins[0]
-    wrkr.say "gatherFromResource", @_rallyResource for wrkr in @workers
+    harvester.say "gatherFromResource", @_rallyResource for harvester in @harvesters
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.targetedBy
@@ -103,9 +103,9 @@ class SCSim.MinPatch extends SCSim.Behavior
     @amt = startingAmt
     @_base = base
     @_targetedBy = 0
-    @workers = []
-    @workerMining = null
-    @workerOverlapThreshold = SCSim.config.workerOverlapThreshold
+    @harvesters = []
+    @harvesterMining = null
+    @harvesterOverlapThreshold = SCSim.config.harvesterOverlapThreshold
     super()
 
   base: -> @_base
@@ -117,32 +117,32 @@ class SCSim.MinPatch extends SCSim.Behavior
       return m
 
   isAvailable: ->
-    @workerMining == null
+    @harvesterMining == null
 
   isAvailableSoon: (harvester) ->
-    (@workerMiningTimeDone - @time.sec < @workerOverlapThreshold)
+    (@harvesterMiningTimeDone - @time.sec < @harvesterOverlapThreshold)
 
   @defaultState
     messages:
-      workerArrived: (harvester) ->
-        @workers.push harvester
+      harvesterArrived: (harvester) ->
+        @harvesters.push harvester
 
       mineralsHarvested: (amtHarvested) ->
         @amt -= amtHarvested
 
       harvestBegan: (harvester, timeMiningDone) ->
-        @workerMiningTimeDone = timeMiningDone
-        @workerMining = harvester
+        @harvesterMiningTimeDone = timeMiningDone
+        @harvesterMining = harvester
 
       harvestComplete: (harvester, amtMined) ->
-        @workerMining = null
-        @workers = _(@workers).rest()
+        @harvesterMining = null
+        @harvesters = _(@harvesters).rest()
         @amt -= amtMined
 
       harvestAborted: (harvester) ->
-        @workers = _(@workers).without(harvester)
-        if @workerMining is harvester
-          @workerMining = null
+        @harvesters = _(@harvesters).without(harvester)
+        if @harvesterMining is harvester
+          @harvesterMining = null
 
       targetedByHarvester: ->
         @_targetedBy += 1
@@ -173,7 +173,7 @@ class SCSim.Harvester extends SCSim.Behavior
 
     messages:
       resourceReached: ->
-        @targetResource.say "workerArrived", @
+        @targetResource.say "harvesterArrived", @
         @go "waitAtResource"
 
   @state "waitAtResource"

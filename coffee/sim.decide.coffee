@@ -46,6 +46,7 @@ class SCSim.Smarts
   applyStrategy: (inputName, methodThatDecidesWhatToDo) ->
     # define strategies to decide outcomes on certain input/alerts/etc
 
+
 class SCSim.SimRun
   constructor: (smarts) ->
     @smarts = smarts

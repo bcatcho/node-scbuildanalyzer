@@ -41,8 +41,8 @@
   };
 
   SCSim.config = {
-    secsPerTick: .1,
-    workerOverlapThreshold: .3
+    secsPerTick: .5,
+    harvesterOverlapThreshold: .3
   };
 
   SCSim.data = {

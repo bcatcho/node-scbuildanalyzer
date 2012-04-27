@@ -1,7 +1,7 @@
 root = exports ? this
 SCSim = root.SCSim
 
-runSim = (workerCount, simLength = 600) ->
+runSim = (harvesterCount, simLength = 600) ->
   console.profile()
   simTickLength = simLength / SCSim.config.secsPerTick
   tickToDate = (t) -> new Date(t * 1000)
@@ -15,7 +15,7 @@ runSim = (workerCount, simLength = 600) ->
 
   base = sim.makeActor "nexus"
   sim.say 'start'
-  base.say("trainUnit", 'probe') for i in [1..workerCount]
+  base.say("trainUnit", 'probe') for i in [1..harvesterCount]
   sim.update() for i in [1..simTickLength]
 
   results =
@@ -24,7 +24,7 @@ runSim = (workerCount, simLength = 600) ->
 
   dataFirstPass = []
   # TODO make config setting, this just happens to look cool
-  dataChunkTime = 4 * (2 + 2 + 1.57)
+  dataChunkTime = (25)
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
 
@@ -49,8 +49,8 @@ options =
 
 series = []
 
-addSeries = (series, options, workerCount) ->
-  results = runSim workerCount, 800
+addSeries = (series, options, harvesterCount) ->
+  results = runSim harvesterCount, 800
   series.push
     data: results.data
     shadowSize: 0

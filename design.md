@@ -29,6 +29,11 @@
   - **notes**
     * A state is used by a behavior.
 
+- Event
+  - startTime
+  - endTime (most likely)
+  - dependantEvent
+
 ## Challenges
 
 #### AI Decision making
@@ -36,7 +41,7 @@
 The decisions need to based on incoming **data**. The data must be useful to answer these questions:
 
 1. When to build supply?
-2. When to build workers?
+2. When to build harvesters?
 3. When to take gas?
 4. When to stop building these things?
 5. When to execute the next part of the build?
@@ -68,7 +73,7 @@ For example
      Cronoboost spell disipates -> place in data.AlertPool or something
      Things being built/researched/Trained -> place in data.Building/researching/Training Pool
       so that they can be checked on by AI
-     Workers stop harvesting -> AlertPool
+     harvesters stop harvesting -> AlertPool
 
 **Idea** - the data collector will be in charge of which events it listens to and what it does with those events.
   The simulation will not have any logging in it explicitly.

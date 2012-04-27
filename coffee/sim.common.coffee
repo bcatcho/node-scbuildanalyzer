@@ -70,7 +70,7 @@ class SCSim.Behavior
     @messages
     @go defaultStateName
 
-  update: (t) -> 
+  update: (t) ->
     @currentState?(t)
 
   go: (sn,a,b,c,d) ->
@@ -132,5 +132,5 @@ class SCSim.Actor
     for n, behavior of @behaviors
       if behavior[name] isnt undefined
         return behavior[name].call behavior, a, b, c, d
-    
+
     console.warn("failed to get #{prop}")

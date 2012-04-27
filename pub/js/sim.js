@@ -6,7 +6,7 @@
 
   SCSim = root.SCSim;
 
-  runSim = function(workerCount, simLength) {
+  runSim = function(harvesterCount, simLength) {
     var base, d, dataChunkTime, dataFirstPass, e, i, n, perChunkToPerMin, results, sim, simTickLength, tickToDate, time, _i, _j, _k, _len, _ref;
     if (simLength == null) {
       simLength = 600;
@@ -25,7 +25,7 @@
     });
     base = sim.makeActor("nexus");
     sim.say('start');
-    for (i = _i = 1; 1 <= workerCount ? _i <= workerCount : _i >= workerCount; i = 1 <= workerCount ? ++_i : --_i) {
+    for (i = _i = 1; 1 <= harvesterCount ? _i <= harvesterCount : _i >= harvesterCount; i = 1 <= harvesterCount ? ++_i : --_i) {
       base.say("trainUnit", 'probe');
     }
     for (i = _j = 1; 1 <= simTickLength ? _j <= simTickLength : _j >= simTickLength; i = 1 <= simTickLength ? ++_j : --_j) {
@@ -36,7 +36,7 @@
       markings: []
     };
     dataFirstPass = [];
-    dataChunkTime = 4 * (2 + 2 + 1.57);
+    dataChunkTime = 25.;
     perChunkToPerMin = function(amt) {
       return amt * (60 / dataChunkTime);
     };
@@ -78,9 +78,9 @@
 
   series = [];
 
-  addSeries = function(series, options, workerCount) {
+  addSeries = function(series, options, harvesterCount) {
     var results;
-    results = runSim(workerCount, 800);
+    results = runSim(harvesterCount, 800);
     series.push({
       data: results.data,
       shadowSize: 0,
