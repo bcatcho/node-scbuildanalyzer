@@ -9,12 +9,11 @@ class SCSim.Simulation extends SCSim.Behavior
     @subActors = {}
     @emitter = emitter
     @time = new SCSim.SimTime
+    @beingBuilt = []
     super()
 
   makeActor: (name, a, b, c, d) ->
-    actorData = (SCSim.data.units[name] ||
-                  SCSim.data.buildings[name] ||
-                  SCSim.data.neutral[name])
+    actorData = SCSim.data.get(name) 
     instance = new SCSim.Actor actorData.behaviors, a,b,c,d
     instance.sim = @
     instance.simId = _.uniqueId()
@@ -35,6 +34,12 @@ class SCSim.Simulation extends SCSim.Behavior
     update: -> (t) ->
       @time.step(1)
       @subActors[actr].update(@time.sec) for actr of @subActors
+
+    messages:
+      buildStructure: (name) ->
+        s = SCSim.data.get "name"
+        @say "purchase", name
+        @beingBuilt.push name
 
 
 class SCSim.Trainer extends SCSim.Behavior
@@ -75,7 +80,6 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @mineralAmt = 0
     @mins = []
     @_rallyResource = @mins[0]
-    @rr = 0
     super()
 
   rallyResource: -> @_rallyResource

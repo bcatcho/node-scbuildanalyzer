@@ -46,6 +46,9 @@
   };
 
   SCSim.data = {
+    get: function(name) {
+      return this.units[name] || this.buildings[name] || this.neutral[name];
+    },
     units: {
       probe: u(50, 0, 17, 1, "Harvester")
     },

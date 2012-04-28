@@ -4,26 +4,27 @@
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
-  chai = root.chai;
-
-  should = chai.should();
-
   SCSim = root.SCSim;
 
   _ = root._;
 
-  SCSim.config.secsPerTick = 1;
+  chai = root.chai;
+
+  should = chai.should();
+
+  SCSim.config.secsPerTick = .5;
 
   describe('Simulation with one base one worker', function() {
-    var base, sim;
-    sim = new SCSim.Simulation;
+    var base, sim, simRun;
+    simRun = new SCSim.SimRun;
+    sim = simRun.sim;
     base = null;
     describe('When told to create a new Simulation::Base', function() {
       return base = sim.makeActor("nexus");
     });
     describe('When told to start', function() {
       it('should change state to running', function() {
-        sim.say('start');
+        simRun.start();
         return sim.stateName.should.equal('running');
       });
       return it('should be at tick count = 0', function() {
@@ -35,7 +36,7 @@
       return it('the base should receive minerals after some time', function() {
         var i, _i;
         for (i = _i = 1; _i <= 50; i = ++_i) {
-          sim.update();
+          simRun.update();
         }
         return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
       });
@@ -43,13 +44,12 @@
   });
 
   describe('Simulation with one base and two workers', function() {
-    var base, sim;
-    sim = new SCSim.Simulation;
-    sim.logger.fwatchFor('harvestBegan', function(e) {
-      return "" + e.simId;
-    });
-    sim.say('start');
+    var base, sim, simRun;
+    simRun = new SCSim.SimRun;
+    sim = simRun.sim;
     base = sim.makeActor("nexus");
+    simRun.start();
+    base.behaviors["PrimaryStructure"].mins = base.behaviors["PrimaryStructure"].mins.slice(0, 2);
     it('should queue up two workers at base', function() {
       base.say("trainUnit", 'probe');
       base.say("trainUnit", 'probe');
@@ -58,21 +58,33 @@
     });
     it('will make the first worker harvest while the 2nd builds', function() {
       while (base.behaviors["Trainer"].buildQueue.length > 0) {
-        sim.update();
+        simRun.update();
       }
       return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
     });
-    return it('will distribute the workers amongst two mineral patches', function() {
-      var i, timeOut, _i;
-      timeOut = 200;
-      while (!sim.logger.eventOccurs('workerCanceledHarvest', timeOut--)) {
-        sim.update();
+    it('workers will seek other resources if theirs is taken', function() {
+      var timeOut,
+        _this = this;
+      timeOut = 50;
+      simRun.emitter.observe("changeTargetResource", function(e) {
+        return timeOut = -999;
+      });
+      while (!(timeOut-- < 0)) {
+        simRun.update();
       }
+      return timeOut.should.equal(-999 - 1);
+    });
+    return it('will find other min patches', function() {
+      var harvestedMinPatchIds, i, _i,
+        _this = this;
+      harvestedMinPatchIds = [];
+      simRun.emitter.observe("harvestBegan", function(e) {
+        return harvestedMinPatchIds.push(e.simId);
+      });
       for (i = _i = 1; _i <= 40; i = ++_i) {
-        sim.update();
+        simRun.update();
       }
-      console.log(_(sim.logger.event('harvestBegan')).unique());
-      return _(sim.logger.event('harvestBegan')).unique().length.should.be.above(1);
+      return _(harvestedMinPatchIds).unique().length.should.equal(2);
     });
   });
 

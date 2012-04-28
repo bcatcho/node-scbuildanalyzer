@@ -20,7 +20,7 @@ runSim = (harvesterCount, simLength = 600) ->
   # run the simulation
   console.profile()
   base = sim.makeActor "nexus"
-  sim.say 'start'
+  simRun.start()
   base.say("trainUnit", 'probe') for i in [1..harvesterCount]
 
   simRun.update() for i in [1..simTickLength]

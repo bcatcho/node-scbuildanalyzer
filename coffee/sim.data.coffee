@@ -31,6 +31,9 @@ SCSim.config =
 
 
 SCSim.data =
+  get: (name) ->
+    return @units[name] || @buildings[name] || @neutral[name]
+
   units:
     probe: u 50, 0, 17, 1, "Harvester"
 

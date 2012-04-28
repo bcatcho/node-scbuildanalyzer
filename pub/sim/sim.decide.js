@@ -57,11 +57,11 @@
         u = SCSim.data.units[unitName];
         return _this.supply += u.supply;
       });
-      return this.addEvent("purchaseUnit", function(e) {
+      return this.addEvent("purchase", function(e) {
         return e.args[0];
       }, function(unitName) {
         var u;
-        u = SCSim.data.units[unitName];
+        u = SCSim.data[unitName];
         _this.minerals -= u.min;
         return _this.gas -= u.gas;
       });
@@ -75,15 +75,7 @@
 
     Smarts.name = 'Smarts';
 
-    function Smarts() {
-      this.strategies = {};
-      this.path = {};
-      this.goals = {};
-    }
-
-    Smarts.prototype.decide = function(hud) {};
-
-    Smarts.prototype.applyStrategy = function(inputName, methodThatDecidesWhatToDo) {};
+    function Smarts() {}
 
     return Smarts;
 

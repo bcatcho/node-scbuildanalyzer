@@ -5,7 +5,7 @@ option '-w', '--watch', 'watch the files for changes and build'
 
 task 'build', 'continually build with --watch', (options) ->
   flags = '-c' + (if options.watch then 'w' else '')
-  coffee = spawn 'coffee', [flags, '-o', 'pub/js/', 'coffee/']
+  coffee = spawn 'coffee', [flags, '-o', 'pub/sim/', 'coffee/']
   coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
   
   coffee = spawn 'coffee', [flags, '-o', 'test/', 'test/']
@@ -21,7 +21,7 @@ task 'run:sim', 'view the Simuation in google chrome', (options) ->
 
 task 'dev', 'continuously build while developing and run the server', ->
   flags = '-cw'
-  coffee = spawn 'coffee', [flags, '-o', 'pub/js/', 'coffee/']
+  coffee = spawn 'coffee', [flags, '-o', 'pub/sim/', 'coffee/']
   coffee.stdout.on 'data', (data) -> console.log data.toString().trim()
   
   coffee = spawn 'coffee', [flags, '-o', 'test/', 'test/']

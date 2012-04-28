@@ -22,12 +22,13 @@
       this.subActors = {};
       this.emitter = emitter;
       this.time = new SCSim.SimTime;
+      this.beingBuilt = [];
       Simulation.__super__.constructor.call(this);
     }
 
     Simulation.prototype.makeActor = function(name, a, b, c, d) {
       var actorData, instance;
-      actorData = SCSim.data.units[name] || SCSim.data.buildings[name] || SCSim.data.neutral[name];
+      actorData = SCSim.data.get(name);
       instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
       instance.sim = this;
       instance.simId = _.uniqueId();
@@ -63,6 +64,14 @@
           }
           return _results;
         };
+      },
+      messages: {
+        buildStructure: function(name) {
+          var s;
+          s = SCSim.data.get("name");
+          this.say("purchase", name);
+          return this.beingBuilt.push(name);
+        }
       }
     });
 
@@ -133,7 +142,6 @@
       this.mineralAmt = 0;
       this.mins = [];
       this._rallyResource = this.mins[0];
-      this.rr = 0;
       PrimaryStructure.__super__.constructor.call(this);
     }
 

@@ -38,27 +38,16 @@ class SCSim.Hud
         u = SCSim.data.units[unitName]
         @supply += u.supply
 
-    @addEvent "purchaseUnit",
+    @addEvent "purchase",
       (e) -> e.args[0],
       (unitName) =>
-        u = SCSim.data.units[unitName]
+        u = SCSim.data[unitName]
         @minerals -= u.min
         @gas -= u.gas
 
 
 class SCSim.Smarts
   constructor: ->
-    @strategies = {}
-    @path = {} # a linked list of your build order
-    # OR:
-    @goals = {} # maybe a list of goals that you will need to meet
-
-  decide: (hud) ->
-    # for things in hud, apply strats, decide and return oommands
-  
-  applyStrategy: (inputName, methodThatDecidesWhatToDo) ->
-    # define strategies to decide outcomes on certain input/alerts/etc
-
 
 class SCSim.SimRun
   constructor: (smarts) ->

@@ -26,7 +26,7 @@
     });
     console.profile();
     base = sim.makeActor("nexus");
-    sim.say('start');
+    simRun.start();
     for (i = _i = 1; 1 <= harvesterCount ? _i <= harvesterCount : _i >= harvesterCount; i = 1 <= harvesterCount ? ++_i : --_i) {
       base.say("trainUnit", 'probe');
     }
