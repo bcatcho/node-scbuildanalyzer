@@ -1,6 +1,7 @@
 root = exports ? this
-SCSim = root.SCSim ? {}
-root.SCSim = SCSim
+
+SCSim = root.SCSim ? {}; root.SCSim = SCSim
+
 
 # Unit Obj Helper
 u = (min, gas, buildTime, supply, behaviors...) ->
@@ -10,6 +11,7 @@ u = (min, gas, buildTime, supply, behaviors...) ->
   supply: supply
   behaviors: behaviors
 
+
 # Building Obj Helper
 b = (min, gas, buildTime, behaviors...) ->
   min: min
@@ -17,12 +19,16 @@ b = (min, gas, buildTime, behaviors...) ->
   buildTime: buildTime
   behaviors: behaviors
 
+
+# Neutral Obj Helper
 n = (behaviors...) ->
   behaviors: behaviors
+
 
 SCSim.config =
   secsPerTick: .5 # FIXME? this affects the precision of harvester decisions
   harvesterOverlapThreshold: .3 # this number + secs Per Tick is important
+
 
 SCSim.data =
   units:
@@ -34,5 +40,3 @@ SCSim.data =
 
   neutral:
     minPatch: n "MinPatch"
-
-

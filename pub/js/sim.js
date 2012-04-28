@@ -67,19 +67,6 @@
     return results;
   };
 
-  options = {
-    grid: {
-      borderWidth: 0,
-      markings: []
-    },
-    xaxis: {
-      mode: "time",
-      timeformat: "%M:%S"
-    }
-  };
-
-  series = [];
-
   addSeries = function(series, options, harvesterCount) {
     var results;
     results = runSim(harvesterCount, 600);
@@ -96,6 +83,19 @@
       options: options
     };
   };
+
+  options = {
+    grid: {
+      borderWidth: 0,
+      markings: []
+    },
+    xaxis: {
+      mode: "time",
+      timeformat: "%M:%S"
+    }
+  };
+
+  series = [];
 
   _ref = addSeries(series, options, 14), series = _ref.series, options = _ref.options;
 

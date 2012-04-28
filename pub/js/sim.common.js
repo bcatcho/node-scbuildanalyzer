@@ -4,11 +4,11 @@
 
   root = typeof exports !== "undefined" && exports !== null ? exports : this;
 
-  _ = root._;
-
   SCSim = (_ref = root.SCSim) != null ? _ref : {};
 
   root.SCSim = SCSim;
+
+  _ = root._;
 
   SCSim.EventEmitter = (function() {
 

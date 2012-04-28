@@ -1,8 +1,7 @@
 root = exports ? this
 
+SCSim = root.SCSim ? {}; root.SCSim = SCSim
 _ = root._ #require underscore
-SCSim = root.SCSim ? {}
-root.SCSim = SCSim
 
 
 class SCSim.Hud
@@ -75,5 +74,3 @@ class SCSim.SimRun
 
   start: ->
     @sim.say "start"
-
-

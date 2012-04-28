@@ -1,5 +1,7 @@
 root = exports ? this
+
 SCSim = root.SCSim
+
 
 runSim = (harvesterCount, simLength = 600) ->
   # helper methods
@@ -44,16 +46,6 @@ runSim = (harvesterCount, simLength = 600) ->
   return results
 
 
-options =
-  grid:
-    borderWidth: 0
-    markings: []
-  xaxis:
-    mode: "time"
-    timeformat: "%M:%S"
-
-series = []
-
 addSeries = (series, options, harvesterCount) ->
   results = runSim harvesterCount, 600
   series.push
@@ -64,6 +56,15 @@ addSeries = (series, options, harvesterCount) ->
   options.grid.markings = options.grid.markings.concat results.markings
   {series, options}
 
-{series, options} = addSeries series, options, 14
 
+options =
+  grid:
+    borderWidth: 0
+    markings: []
+  xaxis:
+    mode: "time"
+    timeformat: "%M:%S"
+
+series = []
+{series, options} = addSeries series, options, 14
 $.plot $("#placeholder"), series, options
