@@ -16,6 +16,7 @@ class SCSim.EventEmitter
     if @events[eventName] isnt undefined
       callBack(eventObj) for callBack in @events[eventName]
 
+
 class SCSim.SimTime
   constructor: ->
     @tick = 0

@@ -85,7 +85,7 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
     @harvesters = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @mins[0]
-    harvester.say "gatherFromResource", @_rallyResource for harvester in @harvesters
+    h.say "gatherFromResource", @_rallyResource for h in @harvesters
 
   getMostAvailableMinPatch: ->
     @mins = _.sortBy @mins, (m) -> m.targetedBy

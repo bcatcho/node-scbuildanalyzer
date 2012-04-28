@@ -38,11 +38,8 @@
       data: [],
       markings: []
     };
-    dataFirstPass = [];
     dataChunkTime = 25.;
-    perChunkToPerMin = function(amt) {
-      return amt * (60 / dataChunkTime);
-    };
+    dataFirstPass = [];
     _ref = logs.mineralsCollected;
     for (_k = 0, _len = _ref.length; _k < _len; _k++) {
       e = _ref[_k];
@@ -55,6 +52,9 @@
       }
       dataFirstPass[time].amt += 5;
     }
+    perChunkToPerMin = function(amt) {
+      return amt * (60 / dataChunkTime);
+    };
     results.data = (function() {
       var _results;
       _results = [];
@@ -82,7 +82,7 @@
 
   addSeries = function(series, options, harvesterCount) {
     var results;
-    results = runSim(harvesterCount, 800);
+    results = runSim(harvesterCount, 600);
     series.push({
       data: results.data,
       shadowSize: 0,

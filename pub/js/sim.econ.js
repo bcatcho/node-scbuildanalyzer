@@ -142,7 +142,7 @@
     };
 
     PrimaryStructure.prototype.instantiate = function() {
-      var harvester, i, _i, _j, _len, _ref1, _results;
+      var h, i, _i, _j, _len, _ref1, _results;
       this.mins = (function() {
         var _i, _results;
         _results = [];
@@ -158,8 +158,8 @@
       _ref1 = this.harvesters;
       _results = [];
       for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-        harvester = _ref1[_j];
-        _results.push(harvester.say("gatherFromResource", this._rallyResource));
+        h = _ref1[_j];
+        _results.push(h.say("gatherFromResource", this._rallyResource));
       }
       return _results;
     };
