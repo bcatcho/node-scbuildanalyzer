@@ -4,50 +4,17 @@ _ = root._ #require underscore
 SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
-
-class SCSim.EventLog
+class SCSim.EventEmitter
   constructor: ->
     @events = {}
-    @eventsToCollect = {}
 
-  defaultFormatter: (e) -> e
-
-  event: (eventName, filter) ->
-    # TODO impliment filter
-    @events[eventName] ? []
-
-  watchFor: (events) ->
-    for e in events
-      @eventsToCollect[e] = @defaultFormatter
-      @events[e] = []
-
-  fwatchFor: (eventName, formatter) ->
-    @eventsToCollect[eventName] = formatter ? @defaultFormatter
+  observe: (eventName, callBack) ->
     @events[eventName] ?= []
+    @events[eventName].push(callBack)
 
-  isTrackingEvent: (eventName) ->
-    @eventsToCollect[eventName] isnt undefined
-
-  log: (e) ->
-    formatter = @eventsToCollect[e.name]
-    @events[e.name].push(formatter(e)) if formatter
-
-  clear: ->
-    @events = {}
-    @watchFor _(@eventsToCollect).keys()
-
-  eventOccurs: (eventName, timeOut, condition) ->
-    # eg. do.Something() until logger.eventOccurs()
-    # TODO : condition
-    @fwatchFor eventName unless @isTrackingEvent(eventName)
-    if @event(eventName).length > 0
-      if condition isnt undefined
-        condition(@event(eventName)) or timeOut <= 0
-      else
-        true
-    else
-      timeOut <= 0
-
+  fire: (eventName, eventObj) ->
+    if @events[eventName] isnt undefined
+      callBack(eventObj) for callBack in @events[eventName]
 
 class SCSim.SimTime
   constructor: ->
@@ -80,7 +47,7 @@ class SCSim.Behavior
     @states[@stateName].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
-    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
+    @emitter.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
     @messages[msgName]?.call @, a, b, c, d
 
   @state: (name, stateObj) ->
@@ -115,7 +82,7 @@ class SCSim.Actor
   instantiate: ->
     for n, behavior of @behaviors
       behavior.simId = @simId
-      behavior.logger = @logger
+      behavior.emitter = @emitter
       behavior.time = @time
       behavior.sim = @sim
       behavior.instantiate?()
@@ -124,7 +91,7 @@ class SCSim.Actor
     b.update(t) for n, b of @behaviors
 
   say: (msgName, a, b, c, d) ->
-    @logger?.log {name: msgName, @time, @simId, args: [a, b, c, d]}
+    @emitter?.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
     for n, behavior of @behaviors
       behavior.messages[msgName]?.call behavior, a, b, c, d
 

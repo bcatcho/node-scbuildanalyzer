@@ -10,74 +10,36 @@
 
   root.SCSim = SCSim;
 
-  SCSim.EventLog = (function() {
+  SCSim.EventEmitter = (function() {
 
-    EventLog.name = 'EventLog';
+    EventEmitter.name = 'EventEmitter';
 
-    function EventLog() {
+    function EventEmitter() {
       this.events = {};
-      this.eventsToCollect = {};
     }
 
-    EventLog.prototype.defaultFormatter = function(e) {
-      return e;
-    };
-
-    EventLog.prototype.event = function(eventName, filter) {
-      var _ref1;
-      return (_ref1 = this.events[eventName]) != null ? _ref1 : [];
-    };
-
-    EventLog.prototype.watchFor = function(events) {
-      var e, _i, _len, _results;
-      _results = [];
-      for (_i = 0, _len = events.length; _i < _len; _i++) {
-        e = events[_i];
-        this.eventsToCollect[e] = this.defaultFormatter;
-        _results.push(this.events[e] = []);
+    EventEmitter.prototype.observe = function(eventName, callBack) {
+      var _base;
+      if ((_base = this.events)[eventName] == null) {
+        _base[eventName] = [];
       }
-      return _results;
+      return this.events[eventName].push(callBack);
     };
 
-    EventLog.prototype.fwatchFor = function(eventName, formatter) {
-      var _base, _ref1;
-      this.eventsToCollect[eventName] = formatter != null ? formatter : this.defaultFormatter;
-      return (_ref1 = (_base = this.events)[eventName]) != null ? _ref1 : _base[eventName] = [];
-    };
-
-    EventLog.prototype.isTrackingEvent = function(eventName) {
-      return this.eventsToCollect[eventName] !== void 0;
-    };
-
-    EventLog.prototype.log = function(e) {
-      var formatter;
-      formatter = this.eventsToCollect[e.name];
-      if (formatter) {
-        return this.events[e.name].push(formatter(e));
-      }
-    };
-
-    EventLog.prototype.clear = function() {
-      this.events = {};
-      return this.watchFor(_(this.eventsToCollect).keys());
-    };
-
-    EventLog.prototype.eventOccurs = function(eventName, timeOut, condition) {
-      if (!this.isTrackingEvent(eventName)) {
-        this.fwatchFor(eventName);
-      }
-      if (this.event(eventName).length > 0) {
-        if (condition !== void 0) {
-          return condition(this.event(eventName)) || timeOut <= 0;
-        } else {
-          return true;
+    EventEmitter.prototype.fire = function(eventName, eventObj) {
+      var callBack, _i, _len, _ref1, _results;
+      if (this.events[eventName] !== void 0) {
+        _ref1 = this.events[eventName];
+        _results = [];
+        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+          callBack = _ref1[_i];
+          _results.push(callBack(eventObj));
         }
-      } else {
-        return timeOut <= 0;
+        return _results;
       }
     };
 
-    return EventLog;
+    return EventEmitter;
 
   })();
 
@@ -134,16 +96,14 @@
     };
 
     Behavior.prototype.say = function(msgName, a, b, c, d) {
-      var _ref1, _ref2;
-      if ((_ref1 = this.logger) != null) {
-        _ref1.log({
-          name: msgName,
-          time: this.time,
-          simId: this.simId,
-          args: [a, b, c, d]
-        });
-      }
-      return (_ref2 = this.messages[msgName]) != null ? _ref2.call(this, a, b, c, d) : void 0;
+      var _ref1;
+      this.emitter.fire(msgName, {
+        name: msgName,
+        time: this.time,
+        simId: this.simId,
+        args: [a, b, c, d]
+      });
+      return (_ref1 = this.messages[msgName]) != null ? _ref1.call(this, a, b, c, d) : void 0;
     };
 
     Behavior.state = function(name, stateObj) {
@@ -205,7 +165,7 @@
       for (n in _ref1) {
         behavior = _ref1[n];
         behavior.simId = this.simId;
-        behavior.logger = this.logger;
+        behavior.emitter = this.emitter;
         behavior.time = this.time;
         behavior.sim = this.sim;
         _results.push(typeof behavior.instantiate === "function" ? behavior.instantiate() : void 0);
@@ -226,8 +186,8 @@
 
     Actor.prototype.say = function(msgName, a, b, c, d) {
       var behavior, n, _ref1, _ref2, _ref3, _results;
-      if ((_ref1 = this.logger) != null) {
-        _ref1.log({
+      if ((_ref1 = this.emitter) != null) {
+        _ref1.fire(msgName, {
           name: msgName,
           time: this.time,
           simId: this.simId,

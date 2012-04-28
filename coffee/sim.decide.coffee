@@ -6,31 +6,45 @@ root.SCSim = SCSim
 
 
 class SCSim.Hud
-  constructor: (eventLog) ->
+  constructor: (emitter) ->
     @minerals = 0
     @gas = 0
     @supply = 0
     @supplyCap = 0
     @production = {}
-    @productionPotential = {} # how much could we do next
     @alerts = [] # crono ready, etc
     @economy = {} # state of crono
     @units = {} # my units (Maybe?)
     @buildings = {} # my buildings (Maybe ?)
-    @techTree = {} # the tech that has been opened up (Maybe?)
-    
-    @setupEvents eventLog
+    @events = {}
+    @emitter = emitter
+    @setupEvents()
 
   exampleProduction: ->
     thing: "name"
     timeLeft: 0 #secs
     alertWhenDone: "name is done"
 
-  updateWithEventLog: (eventLog) ->
-    # roll through logs and fix up all the numbers
+  addEvent: (eventName, filter, callBack) ->
+    @emitter.observe eventName, (eventObj) -> callBack(filter(eventObj))
 
-  setupEvents: (eventLog) ->
-    # set up all the events it needs to be able to update
+  setupEvents:  ->
+    @addEvent "depositMinerals",
+      (e) -> e.args[0],
+      (minAmt) => @minerals += minAmt
+
+    @addEvent "trainUnitComplete",
+      (e) -> e.args[0],
+      (unitName) =>
+        u = SCSim.data.units[unitName]
+        @supply += u.supply
+
+    @addEvent "purchaseUnit",
+      (e) -> e.args[0],
+      (unitName) =>
+        u = SCSim.data.units[unitName]
+        @minerals -= u.min
+        @gas -= u.gas
 
 
 class SCSim.Smarts
@@ -50,14 +64,16 @@ class SCSim.Smarts
 class SCSim.SimRun
   constructor: (smarts) ->
     @smarts = smarts
-    @eventLog = new SCSim.EventLog
-    @hud = new SCSim.Hud @eventLog
+    @emitter = new SCSim.EventEmitter
+    @hud = new SCSim.Hud @emitter
     # what about configs?
-    @sim = new SCSim.Simulation @eventLog
+    @sim = new SCSim.Simulation @emitter
     
-  mainLoop: ->
-    @hud.updateWithEventLog @eventLog
-    commands = @smarts.decide @hud
-    @sim.update(commands)
+  update: ->
+    #commands = @smarts.decide @hud
+    @sim.update()
+
+  start: ->
+    @sim.say "start"
 
 

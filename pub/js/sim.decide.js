@@ -14,19 +14,19 @@
 
     Hud.name = 'Hud';
 
-    function Hud(eventLog) {
+    function Hud(emitter) {
       this.minerals = 0;
       this.gas = 0;
       this.supply = 0;
       this.supplyCap = 0;
       this.production = {};
-      this.productionPotential = {};
       this.alerts = [];
       this.economy = {};
       this.units = {};
       this.buildings = {};
-      this.techTree = {};
-      this.setupEvents(eventLog);
+      this.events = {};
+      this.emitter = emitter;
+      this.setupEvents();
     }
 
     Hud.prototype.exampleProduction = function() {
@@ -37,9 +37,35 @@
       };
     };
 
-    Hud.prototype.updateWithEventLog = function(eventLog) {};
+    Hud.prototype.addEvent = function(eventName, filter, callBack) {
+      return this.emitter.observe(eventName, function(eventObj) {
+        return callBack(filter(eventObj));
+      });
+    };
 
-    Hud.prototype.setupEvents = function(eventLog) {};
+    Hud.prototype.setupEvents = function() {
+      var _this = this;
+      this.addEvent("depositMinerals", function(e) {
+        return e.args[0];
+      }, function(minAmt) {
+        return _this.minerals += minAmt;
+      });
+      this.addEvent("trainUnitComplete", function(e) {
+        return e.args[0];
+      }, function(unitName) {
+        var u;
+        u = SCSim.data.units[unitName];
+        return _this.supply += u.supply;
+      });
+      return this.addEvent("purchaseUnit", function(e) {
+        return e.args[0];
+      }, function(unitName) {
+        var u;
+        u = SCSim.data.units[unitName];
+        _this.minerals -= u.min;
+        return _this.gas -= u.gas;
+      });
+    };
 
     return Hud;
 
@@ -69,16 +95,17 @@
 
     function SimRun(smarts) {
       this.smarts = smarts;
-      this.eventLog = new SCSim.EventLog;
-      this.hud = new SCSim.Hud(this.eventLog);
-      this.sim = new SCSim.Simulation(this.eventLog);
+      this.emitter = new SCSim.EventEmitter;
+      this.hud = new SCSim.Hud(this.emitter);
+      this.sim = new SCSim.Simulation(this.emitter);
     }
 
-    SimRun.prototype.mainLoop = function() {
-      var commands;
-      this.hud.updateWithEventLog(this.eventLog);
-      commands = this.smarts.decide(this.hud);
-      return this.sim.update(commands);
+    SimRun.prototype.update = function() {
+      return this.sim.update();
+    };
+
+    SimRun.prototype.start = function() {
+      return this.sim.say("start");
     };
 
     return SimRun;

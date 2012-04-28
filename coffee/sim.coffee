@@ -2,21 +2,25 @@ root = exports ? this
 SCSim = root.SCSim
 
 runSim = (harvesterCount, simLength = 600) ->
-  console.profile()
   simTickLength = simLength / SCSim.config.secsPerTick
   tickToDate = (t) -> new Date(t * 1000)
+  
+  logs =
+    mineralsCollected: []
 
-  sim = new SCSim.Simulation
-  sim.logger.fwatchFor 'mineralsCollected',
-     (e) -> [e.time.sec, e.args[0]/(e.time.sec/60)]
+  simRun = new SCSim.SimRun
+  sim = simRun.sim
+  simRun.emitter.observe 'mineralsCollected',
+     (e) => logs.mineralsCollected.push [e.time.sec, e.args[0]/(e.time.sec/60)]
      
-  sim.logger.fwatchFor 'doneBuildUnit',
-     (e) -> (tickToDate e.time.sec)
 
+  console.profile()
   base = sim.makeActor "nexus"
   sim.say 'start'
   base.say("trainUnit", 'probe') for i in [1..harvesterCount]
-  sim.update() for i in [1..simTickLength]
+
+  simRun.update() for i in [1..simTickLength]
+  console.profileEnd()
 
   results =
      data: []
@@ -27,15 +31,13 @@ runSim = (harvesterCount, simLength = 600) ->
   dataChunkTime = (25)
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
-
-  for e in sim.logger.event 'mineralsCollected'
+  for e in logs.mineralsCollected
     time = Math.floor(e[0] / dataChunkTime)
     if dataFirstPass[time] is undefined
       dataFirstPass[time] = {time: tickToDate(time * dataChunkTime),  amt: 0}
     dataFirstPass[time].amt += 5
 
   results.data = ([d.time, perChunkToPerMin(d.amt)] for n, d of dataFirstPass)
-  console.profileEnd()
   return results
 
 

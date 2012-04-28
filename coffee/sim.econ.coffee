@@ -6,9 +6,9 @@ SCSim = root.SCSim ? {}
 root.SCSim = SCSim
 
 class SCSim.Simulation extends SCSim.Behavior
-  constructor: ->
+  constructor: (emitter) ->
     @subActors = {}
-    @logger = new SCSim.EventLog
+    @emitter = emitter
     @time = new SCSim.SimTime
     super()
 
@@ -19,7 +19,7 @@ class SCSim.Simulation extends SCSim.Behavior
     instance = new SCSim.Actor actorData.behaviors, a,b,c,d
     instance.sim = @
     instance.simId = _.uniqueId()
-    instance.logger = @logger
+    instance.emitter = @emitter
     instance.time = @time
     @subActors[instance.simId] = instance
     instance.instantiate?()
@@ -76,6 +76,7 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @mineralAmt = 0
     @mins = []
     @_rallyResource = @mins[0]
+    @rr = 0
     super()
 
   rallyResource: -> @_rallyResource

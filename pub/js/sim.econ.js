@@ -18,9 +18,9 @@
 
     Simulation.name = 'Simulation';
 
-    function Simulation() {
+    function Simulation(emitter) {
       this.subActors = {};
-      this.logger = new SCSim.EventLog;
+      this.emitter = emitter;
       this.time = new SCSim.SimTime;
       Simulation.__super__.constructor.call(this);
     }
@@ -31,7 +31,7 @@
       instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
       instance.sim = this;
       instance.simId = _.uniqueId();
-      instance.logger = this.logger;
+      instance.emitter = this.emitter;
       instance.time = this.time;
       this.subActors[instance.simId] = instance;
       if (typeof instance.instantiate === "function") {
@@ -133,6 +133,7 @@
       this.mineralAmt = 0;
       this.mins = [];
       this._rallyResource = this.mins[0];
+      this.rr = 0;
       PrimaryStructure.__super__.constructor.call(this);
     }
 

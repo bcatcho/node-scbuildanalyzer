@@ -7,30 +7,33 @@
   SCSim = root.SCSim;
 
   runSim = function(harvesterCount, simLength) {
-    var base, d, dataChunkTime, dataFirstPass, e, i, n, perChunkToPerMin, results, sim, simTickLength, tickToDate, time, _i, _j, _k, _len, _ref;
+    var base, d, dataChunkTime, dataFirstPass, e, i, logs, n, perChunkToPerMin, results, sim, simRun, simTickLength, tickToDate, time, _i, _j, _k, _len, _ref,
+      _this = this;
     if (simLength == null) {
       simLength = 600;
     }
-    console.profile();
     simTickLength = simLength / SCSim.config.secsPerTick;
     tickToDate = function(t) {
       return new Date(t * 1000);
     };
-    sim = new SCSim.Simulation;
-    sim.logger.fwatchFor('mineralsCollected', function(e) {
-      return [e.time.sec, e.args[0] / (e.time.sec / 60)];
+    logs = {
+      mineralsCollected: []
+    };
+    simRun = new SCSim.SimRun;
+    sim = simRun.sim;
+    simRun.emitter.observe('mineralsCollected', function(e) {
+      return logs.mineralsCollected.push([e.time.sec, e.args[0] / (e.time.sec / 60)]);
     });
-    sim.logger.fwatchFor('doneBuildUnit', function(e) {
-      return tickToDate(e.time.sec);
-    });
+    console.profile();
     base = sim.makeActor("nexus");
     sim.say('start');
     for (i = _i = 1; 1 <= harvesterCount ? _i <= harvesterCount : _i >= harvesterCount; i = 1 <= harvesterCount ? ++_i : --_i) {
       base.say("trainUnit", 'probe');
     }
     for (i = _j = 1; 1 <= simTickLength ? _j <= simTickLength : _j >= simTickLength; i = 1 <= simTickLength ? ++_j : --_j) {
-      sim.update();
+      simRun.update();
     }
+    console.profileEnd();
     results = {
       data: [],
       markings: []
@@ -40,7 +43,7 @@
     perChunkToPerMin = function(amt) {
       return amt * (60 / dataChunkTime);
     };
-    _ref = sim.logger.event('mineralsCollected');
+    _ref = logs.mineralsCollected;
     for (_k = 0, _len = _ref.length; _k < _len; _k++) {
       e = _ref[_k];
       time = Math.floor(e[0] / dataChunkTime);
@@ -61,7 +64,6 @@
       }
       return _results;
     })();
-    console.profileEnd();
     return results;
   };
 
