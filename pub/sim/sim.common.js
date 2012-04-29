@@ -10,6 +10,10 @@
 
   _ = root._;
 
+  SCSim.GetClass = function(obj) {
+    return obj.constructor.name;
+  };
+
   SCSim.EventEmitter = (function() {
 
     EventEmitter.name = 'EventEmitter';
@@ -74,25 +78,28 @@
 
     Behavior.name = 'Behavior';
 
-    function Behavior(defaultStateName) {
+    function Behavior() {
+      this.currentState;
+      this.messages;
+    }
+
+    Behavior.prototype.instantiate = function(defaultStateName) {
       if (defaultStateName == null) {
         defaultStateName = "default";
       }
-      this.currentState;
-      this.messages;
-      this.go(defaultStateName);
-    }
+      return this.go(defaultStateName);
+    };
 
     Behavior.prototype.update = function(t) {
       return typeof this.currentState === "function" ? this.currentState(t) : void 0;
     };
 
     Behavior.prototype.go = function(sn, a, b, c, d) {
-      var _ref1, _ref2;
+      var _ref1, _ref2, _ref3;
       this.stateName = sn;
       this.currentState = (_ref1 = this.states[this.stateName].update) != null ? _ref1.call(this, a, b, c, d) : void 0;
-      this.messages = this.states[this.stateName].messages;
-      return (_ref2 = this.states[this.stateName].enterState) != null ? _ref2.call(this, a, b, c, d) : void 0;
+      this.messages = (_ref2 = this.states[this.stateName].messages) != null ? _ref2 : {};
+      return (_ref3 = this.states[this.stateName].enterState) != null ? _ref3.call(this, a, b, c, d) : void 0;
     };
 
     Behavior.prototype.say = function(msgName, a, b, c, d) {
@@ -118,6 +125,14 @@
         this.prototype.states = {};
       }
       return this.prototype.states["default"] = stateObj;
+    };
+
+    Behavior.prototype.blockActor = function() {
+      return this.actor.startBlockingWithBehavior(this);
+    };
+
+    Behavior.prototype.unblockActor = function() {
+      return this.actor.stopBlockingWithBehavior();
     };
 
     Behavior.prototype.isExpired = function(t) {
@@ -149,6 +164,7 @@
         bName = behaviors[_i];
         this.addBehavior(bName, a, b, c, d);
       }
+      this.blockingBehavior = void 0;
     }
 
     Actor.prototype.addBehavior = function(bName, a, b, c, d) {
@@ -173,19 +189,34 @@
       return _results;
     };
 
+    Actor.prototype.startBlockingWithBehavior = function(behavior) {
+      if (this.blockingBehavior !== void 0) {
+        console.error("behavior already set                      to " + (SCSim.GetClass(this.blockingBehavior)));
+      }
+      return this.blockingBehavior = behavior;
+    };
+
+    Actor.prototype.stopBlockingWithBehavior = function() {
+      return this.blockingBehavior = void 0;
+    };
+
     Actor.prototype.update = function(t) {
       var b, n, _ref1, _results;
-      _ref1 = this.behaviors;
-      _results = [];
-      for (n in _ref1) {
-        b = _ref1[n];
-        _results.push(b.update(t));
+      if (this.blockingBehavior !== void 0) {
+        return this.blockingBehavior.update(t);
+      } else {
+        _ref1 = this.behaviors;
+        _results = [];
+        for (n in _ref1) {
+          b = _ref1[n];
+          _results.push(b.update(t));
+        }
+        return _results;
       }
-      return _results;
     };
 
     Actor.prototype.say = function(msgName, a, b, c, d) {
-      var behavior, n, _ref1, _ref2, _ref3, _results;
+      var behavior, n, _ref1, _ref2, _ref3, _ref4, _results;
       if ((_ref1 = this.emitter) != null) {
         _ref1.fire(msgName, {
           name: msgName,
@@ -194,13 +225,17 @@
           args: [a, b, c, d]
         });
       }
-      _ref2 = this.behaviors;
-      _results = [];
-      for (n in _ref2) {
-        behavior = _ref2[n];
-        _results.push((_ref3 = behavior.messages[msgName]) != null ? _ref3.call(behavior, a, b, c, d) : void 0);
+      if (this.blockingBehavior !== void 0) {
+        return (_ref2 = this.blockingBehavior.messages[msgName]) != null ? _ref2.call(behavior, a, b, c, d) : void 0;
+      } else {
+        _ref3 = this.behaviors;
+        _results = [];
+        for (n in _ref3) {
+          behavior = _ref3[n];
+          _results.push((_ref4 = behavior.messages[msgName]) != null ? _ref4.call(behavior, a, b, c, d) : void 0);
+        }
+        return _results;
       }
-      return _results;
     };
 
     Actor.prototype.get = function(name, a, b, c, d) {

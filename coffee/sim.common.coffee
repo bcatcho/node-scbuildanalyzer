@@ -4,6 +4,8 @@ SCSim = root.SCSim ? {}; root.SCSim = SCSim
 _ = root._ #require underscore
 
 
+SCSim.GetClass = (obj) -> obj.constructor.name
+
 class SCSim.EventEmitter
   constructor: ->
     @events = {}
@@ -33,9 +35,11 @@ class SCSim.SimTime
 
 
 class SCSim.Behavior
-  constructor: (defaultStateName = "default") ->
+  constructor: ->
     @currentState
     @messages
+
+  instantiate: (defaultStateName = "default") ->
     @go defaultStateName
 
   update: (t) ->
@@ -44,7 +48,7 @@ class SCSim.Behavior
   go: (sn,a,b,c,d) ->
     @stateName = sn
     @currentState = @states[@stateName].update?.call @, a,b,c,d
-    @messages = @states[@stateName].messages
+    @messages = @states[@stateName].messages ? {}
     @states[@stateName].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
@@ -61,6 +65,12 @@ class SCSim.Behavior
       @::states = {}
     @::states["default"] = stateObj
 
+  blockActor: ->
+    @actor.startBlockingWithBehavior @
+
+  unblockActor: ->
+    @actor.stopBlockingWithBehavior()
+
   isExpired: (t) -> t <= 0
 
   sayAfter: (timeSpan, a, b, c, d) ->
@@ -72,6 +82,7 @@ class SCSim.Actor
   constructor: (behaviors, a, b, c, d) ->
     @behaviors = {}
     @addBehavior(bName, a, b, c, d) for bName in behaviors
+    @blockingBehavior = undefined
 
   addBehavior: (bName, a, b, c, d) ->
     behavior = new SCSim[bName] a, b, c, d
@@ -88,13 +99,28 @@ class SCSim.Actor
       behavior.sim = @sim
       behavior.instantiate?()
 
+  startBlockingWithBehavior: (behavior) ->
+    if @blockingBehavior isnt undefined
+      console.error "behavior already set
+                      to #{SCSim.GetClass(@blockingBehavior)}"
+    @blockingBehavior = behavior
+
+  stopBlockingWithBehavior: ->
+    @blockingBehavior = undefined
+
   update: (t) ->
-    b.update(t) for n, b of @behaviors
+    if @blockingBehavior isnt undefined
+      @blockingBehavior.update(t)
+    else
+      b.update(t) for n, b of @behaviors
 
   say: (msgName, a, b, c, d) ->
     @emitter?.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
-    for n, behavior of @behaviors
-      behavior.messages[msgName]?.call behavior, a, b, c, d
+    if @blockingBehavior isnt undefined
+      @blockingBehavior.messages[msgName]?.call behavior, a, b, c, d
+    else
+      for n, behavior of @behaviors
+        behavior.messages[msgName]?.call behavior, a, b, c, d
 
   get: (name, a, b, c, d) ->
     for n, behavior of @behaviors

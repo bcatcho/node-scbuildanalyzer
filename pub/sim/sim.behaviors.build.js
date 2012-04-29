@@ -22,11 +22,64 @@
 
     WarpInBuilder.defaultState({
       messages: {
-        build: function(name) {}
+        build: function(name) {
+          return this.sim.say("trainActor", name);
+        }
       }
     });
 
     return WarpInBuilder;
+
+  })(SCSim.Behavior);
+
+  SCSim.Trainable = (function(_super) {
+
+    __extends(Trainable, _super);
+
+    Trainable.name = 'Trainable';
+
+    function Trainable(callbacks) {
+      this.callbacks = callbacks != null ? callbacks : [];
+      this.buidTime;
+      this.startTime;
+    }
+
+    Trainable.prototype.instantiate = function() {
+      this.buildTime = (SCSim.data.get(this.actor.actorName)).buildTime;
+      this.blockActor();
+      return this.go("default");
+    };
+
+    Trainable.defaultState({
+      update: function() {
+        return function() {
+          if (this.startTime + this.buildTime <= this.time.sec) {
+            return this.say("trainingComplete");
+          }
+        };
+      },
+      enterState: function() {
+        return this.startTime = this.time.sec;
+      },
+      messages: {
+        trainingComplete: function() {
+          var c, _i, _len, _ref1, _results;
+          this.unblockActor();
+          this.go("trained");
+          _ref1 = this.callbacks;
+          _results = [];
+          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+            c = _ref1[_i];
+            _results.push(c());
+          }
+          return _results;
+        }
+      }
+    });
+
+    Trainable.state("trained", {});
+
+    return Trainable;
 
   })(SCSim.Behavior);
 

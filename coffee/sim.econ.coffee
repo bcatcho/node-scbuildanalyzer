@@ -11,10 +11,12 @@ class SCSim.Simulation extends SCSim.Behavior
     @time = new SCSim.SimTime
     @beingBuilt = []
     super()
+    @instantiate()
 
   makeActor: (name, a, b, c, d) ->
-    actorData = SCSim.data.get(name) 
+    actorData = SCSim.data.get(name)
     instance = new SCSim.Actor actorData.behaviors, a,b,c,d
+    instance.actorName = name
     instance.sim = @
     instance.simId = _.uniqueId()
     instance.emitter = @emitter
@@ -85,6 +87,7 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
   rallyResource: -> @_rallyResource
 
   instantiate: ->
+    super()
     @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
     @harvesters = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @mins[0]
@@ -162,9 +165,9 @@ class SCSim.Harvester extends SCSim.Behavior
     @t_mine = 1.5
     @targetResource
     @collectAmt = 5
-    super "idle"
+    super()
 
-  @state "idle"
+  @defaultState
     messages:
       gatherFromResource: (resource) ->
         @targetResource = resource

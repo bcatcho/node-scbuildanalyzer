@@ -24,12 +24,14 @@
       this.time = new SCSim.SimTime;
       this.beingBuilt = [];
       Simulation.__super__.constructor.call(this);
+      this.instantiate();
     }
 
     Simulation.prototype.makeActor = function(name, a, b, c, d) {
       var actorData, instance;
       actorData = SCSim.data.get(name);
       instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
+      instance.actorName = name;
       instance.sim = this;
       instance.simId = _.uniqueId();
       instance.emitter = this.emitter;
@@ -151,6 +153,7 @@
 
     PrimaryStructure.prototype.instantiate = function() {
       var h, i, _i, _j, _len, _ref1, _results;
+      PrimaryStructure.__super__.instantiate.call(this);
       this.mins = (function() {
         var _i, _results;
         _results = [];
@@ -288,10 +291,10 @@
       this.t_mine = 1.5;
       this.targetResource;
       this.collectAmt = 5;
-      Harvester.__super__.constructor.call(this, "idle");
+      Harvester.__super__.constructor.call(this);
     }
 
-    Harvester.state("idle", {
+    Harvester.defaultState({
       messages: {
         gatherFromResource: function(resource) {
           this.targetResource = resource;
