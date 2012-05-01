@@ -35,7 +35,7 @@
       base.say("trainUnit", 'probe');
       return it('the base should receive minerals after some time', function() {
         var i, _i;
-        for (i = _i = 1; _i <= 50; i = ++_i) {
+        for (i = _i = 1; _i <= 60; i = ++_i) {
           simRun.update();
         }
         return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
@@ -49,15 +49,14 @@
     sim = simRun.sim;
     base = sim.makeActor("nexus");
     simRun.start();
-    base.behaviors["PrimaryStructure"].mins = base.behaviors["PrimaryStructure"].mins.slice(0, 2);
     it('should queue up two workers at base', function() {
       base.say("trainUnit", 'probe');
       base.say("trainUnit", 'probe');
       base.say("trainUnit", 'probe');
-      return base.behaviors["Trainer"].buildQueue.length.should.equal(3);
+      return base.behaviors["Trainer"].queued.length.should.equal(2);
     });
     it('will make the first worker harvest while the 2nd builds', function() {
-      while (base.behaviors["Trainer"].buildQueue.length > 0) {
+      while (base.behaviors["Trainer"].queued.length > 0) {
         simRun.update();
       }
       return base.behaviors["PrimaryStructure"].mineralAmt.should.be.above(0);
@@ -84,7 +83,7 @@
       for (i = _i = 1; _i <= 40; i = ++_i) {
         simRun.update();
       }
-      return _(harvestedMinPatchIds).unique().length.should.equal(2);
+      return _(harvestedMinPatchIds).unique().length.should.be.above(1);
     });
   });
 

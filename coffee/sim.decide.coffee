@@ -33,7 +33,7 @@ class SCSim.Hud
       (minAmt) => @minerals += minAmt
 
     @addEvent "trainUnitComplete",
-      (e) -> e.args[0],
+      (e) -> e.args[0].actorName,
       (unitName) =>
         u = SCSim.data.units[unitName]
         @supply += u.supply
@@ -49,6 +49,7 @@ class SCSim.Hud
 class SCSim.Smarts
   constructor: ->
 
+
 class SCSim.SimRun
   constructor: (smarts) ->
     @smarts = smarts
@@ -56,7 +57,7 @@ class SCSim.SimRun
     @hud = new SCSim.Hud @emitter
     # what about configs?
     @sim = new SCSim.Simulation @emitter
-    
+
   update: ->
     #commands = @smarts.decide @hud
     @sim.update()

@@ -51,7 +51,7 @@
         return _this.minerals += minAmt;
       });
       this.addEvent("trainUnitComplete", function(e) {
-        return e.args[0];
+        return e.args[0].actorName;
       }, function(unitName) {
         var u;
         u = SCSim.data.units[unitName];

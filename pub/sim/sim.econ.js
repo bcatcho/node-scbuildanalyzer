@@ -43,6 +43,13 @@
       return instance;
     };
 
+    Simulation.prototype.trainActor = function(name, callback) {
+      var actor;
+      actor = this.makeActor(name);
+      actor.say("addCallback", callback);
+      return actor;
+    };
+
     Simulation.prototype.getActor = function(simId) {
       return this.subActors[simId];
     };
@@ -78,59 +85,6 @@
     });
 
     return Simulation;
-
-  })(SCSim.Behavior);
-
-  SCSim.Trainer = (function(_super) {
-
-    __extends(Trainer, _super);
-
-    Trainer.name = 'Trainer';
-
-    function Trainer() {
-      this.buildQueue = [];
-      Trainer.__super__.constructor.call(this);
-    }
-
-    Trainer.prototype.updateBuildQueue = function() {
-      var unit;
-      if (this.buildQueue.length > 0) {
-        unit = this.buildQueue[0];
-        if (this.isExpired(unit.buildTime - (this.time.sec - unit.startTime))) {
-          return this.say("trainUnitComplete", unit.unitName);
-        }
-      }
-    };
-
-    Trainer.defaultState({
-      update: function() {
-        return function() {
-          return this.updateBuildQueue();
-        };
-      },
-      messages: {
-        trainUnit: function(unitName) {
-          var u;
-          u = SCSim.data.units[unitName];
-          return this.buildQueue.push({
-            startTime: this.time.sec,
-            buildTime: u.buildTime,
-            unitName: unitName
-          });
-        },
-        trainUnitComplete: function(unitName) {
-          var unit;
-          unit = this.sim.makeActor(unitName);
-          unit.say("gatherFromResource", this.actor.get("rallyResource"));
-          this.buildQueue = this.buildQueue.slice(1);
-          if (this.buildQueue.length > 0) {
-            return this.buildQueue[0].startTime = this.time.sec;
-          }
-        }
-      }
-    });
-
-    return Trainer;
 
   })(SCSim.Behavior);
 

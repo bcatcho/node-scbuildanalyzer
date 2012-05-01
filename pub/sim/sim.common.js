@@ -226,7 +226,7 @@
         });
       }
       if (this.blockingBehavior !== void 0) {
-        return (_ref2 = this.blockingBehavior.messages[msgName]) != null ? _ref2.call(behavior, a, b, c, d) : void 0;
+        return (_ref2 = this.blockingBehavior.messages[msgName]) != null ? _ref2.call(this.blockingBehavior, a, b, c, d) : void 0;
       } else {
         _ref3 = this.behaviors;
         _results = [];

@@ -6,10 +6,11 @@ _ = root._
 chai = root.chai
 should = chai.should()
 
+
 #configure
 SCSim.config.secsPerTick = .5 # to speed up tests
 
-# tests
+
 describe 'Simulation with one base one worker', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
@@ -30,24 +31,24 @@ describe 'Simulation with one base one worker', ->
     base.say "trainUnit", 'probe'
 
     it 'the base should receive minerals after some time', ->
-      simRun.update() for i in [1..50]
+      simRun.update() for i in [1..60]
       base.behaviors["PrimaryStructure"].mineralAmt.should.be.above 0
+
 
 describe 'Simulation with one base and two workers', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
   base = sim.makeActor "nexus"
   simRun.start()
-  base.behaviors["PrimaryStructure"].mins = base.behaviors["PrimaryStructure"].mins[..1]
 
   it 'should queue up two workers at base', ->
     base.say "trainUnit", 'probe'
     base.say "trainUnit", 'probe'
     base.say "trainUnit", 'probe'
-    base.behaviors["Trainer"].buildQueue.length.should.equal 3
+    base.behaviors["Trainer"].queued.length.should.equal 2
 
   it 'will make the first worker harvest while the 2nd builds', ->
-    simRun.update() while base.behaviors["Trainer"].buildQueue.length > 0
+    simRun.update() while base.behaviors["Trainer"].queued.length > 0
     base.behaviors["PrimaryStructure"].mineralAmt.should.be.above 0
 
   it 'workers will seek other resources if theirs is taken', ->
@@ -58,9 +59,10 @@ describe 'Simulation with one base and two workers', ->
 
   it 'will find other min patches', ->
     harvestedMinPatchIds = []
-    simRun.emitter.observe "harvestBegan", (e) => harvestedMinPatchIds.push e.simId
+    simRun.emitter.observe "harvestBegan",
+      (e) => harvestedMinPatchIds.push e.simId
 
     simRun.update() for i in [1..40]
-    _(harvestedMinPatchIds).unique().length.should.equal 2
+    _(harvestedMinPatchIds).unique().length.should.be.above 1
 
 

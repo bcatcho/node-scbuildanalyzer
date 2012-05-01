@@ -3,8 +3,9 @@ root = exports ? this
 SCSim = root.SCSim ? {}; root.SCSim = SCSim
 _ = root._ #require underscore
 
-
+# common methods
 SCSim.GetClass = (obj) -> obj.constructor.name
+
 
 class SCSim.EventEmitter
   constructor: ->
@@ -117,7 +118,7 @@ class SCSim.Actor
   say: (msgName, a, b, c, d) ->
     @emitter?.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
     if @blockingBehavior isnt undefined
-      @blockingBehavior.messages[msgName]?.call behavior, a, b, c, d
+      @blockingBehavior.messages[msgName]?.call @blockingBehavior, a, b, c, d
     else
       for n, behavior of @behaviors
         behavior.messages[msgName]?.call behavior, a, b, c, d

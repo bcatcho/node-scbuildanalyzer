@@ -1,10 +1,10 @@
 root = exports ? this
 
 SCSim = root.SCSim
-_ = root._
-
+_ = root._ #require underscore
 chai = root.chai
 should = chai.should()
+
 
 class SCSim.TestBehavior extends SCSim.Behavior
   constructor: ->
@@ -16,6 +16,7 @@ class SCSim.TestBehavior extends SCSim.Behavior
 
     messages:
       prop100: -> @prop = 100
+
 
 class SCSim.TestBlockingBehavior extends SCSim.Behavior
   constructor: ->
@@ -49,6 +50,7 @@ describe "SCSim.Behavior", ->
       a.update()
       a.behaviors.TestBehavior.prop.should.equal 1
       a.behaviors.TestBlockingBehavior.prop.should.equal 2
+
 
 describe "SCSim.Trainable", ->
   actr = null

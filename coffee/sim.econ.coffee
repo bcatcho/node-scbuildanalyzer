@@ -13,6 +13,7 @@ class SCSim.Simulation extends SCSim.Behavior
     super()
     @instantiate()
 
+  # TODO remove the params
   makeActor: (name, a, b, c, d) ->
     actorData = SCSim.data.get(name)
     instance = new SCSim.Actor actorData.behaviors, a,b,c,d
@@ -24,6 +25,11 @@ class SCSim.Simulation extends SCSim.Behavior
     @subActors[instance.simId] = instance
     instance.instantiate?()
     instance
+
+  trainActor: (name, callback) ->
+    actor = @makeActor name
+    actor.say "addCallback", callback
+    actor
 
   getActor: (simId) ->
     return @subActors[simId]
@@ -42,39 +48,6 @@ class SCSim.Simulation extends SCSim.Behavior
         s = SCSim.data.get "name"
         @say "purchase", name
         @beingBuilt.push name
-
-
-class SCSim.Trainer extends SCSim.Behavior
-  constructor: ->
-    @buildQueue = []
-    super()
-
-  updateBuildQueue: ->
-    if @buildQueue.length > 0
-      unit = @buildQueue[0]
-      if @isExpired (unit.buildTime - (@time.sec - unit.startTime))
-        @say "trainUnitComplete", unit.unitName
-
-  @defaultState
-    update: -> ->
-      @updateBuildQueue()
-
-    messages:
-      trainUnit: (unitName) ->
-        u = SCSim.data.units[unitName]
-        @buildQueue.push
-          startTime: @time.sec
-          buildTime: u.buildTime
-          unitName: unitName
-
-      trainUnitComplete: (unitName) ->
-        unit = @sim.makeActor unitName
-        # FIXME what to do on build should be outside of this behavior?
-        unit.say "gatherFromResource", @actor.get "rallyResource"
-
-        @buildQueue = @buildQueue[1..]
-        if @buildQueue.length > 0
-          @buildQueue[0].startTime = @time.sec
 
 
 class SCSim.PrimaryStructure extends SCSim.Behavior
