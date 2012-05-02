@@ -4,84 +4,60 @@ SCSim = root.SCSim ? {}; root.SCSim = SCSim
 _ = root._ #require underscore
 
 
-class SCSim.Simulation extends SCSim.Behavior
-  constructor: (emitter) ->
-    @subActors = {}
-    @emitter = emitter
-    @time = new SCSim.SimTime
-    @beingBuilt = []
-    super()
-    @instantiate()
-
-  # TODO remove the params
-  makeActor: (name, a, b, c, d) ->
-    actorData = SCSim.data.get(name)
-    instance = new SCSim.Actor actorData.behaviors, a,b,c,d
-    instance.actorName = name
-    instance.sim = @
-    instance.simId = _.uniqueId()
-    instance.emitter = @emitter
-    instance.time = @time
-    @subActors[instance.simId] = instance
-    instance.instantiate?()
-    instance
-
-  trainActor: (name, callback) ->
-    actor = @makeActor name
-    actor.say "addCallback", callback
-    actor
-
-  getActor: (simId) ->
-    return @subActors[simId]
-
-  @defaultState
-    messages:
-      start: -> @go "running"
-
-  @state "running"
-    update: -> (t) ->
-      @time.step(1)
-      @subActors[actr].update(@time.sec) for actr of @subActors
-
-    messages:
-      buildStructure: (name) ->
-        s = SCSim.data.get "name"
-        @say "purchase", name
-        @beingBuilt.push name
-
-
 class SCSim.PrimaryStructure extends SCSim.Behavior
   constructor: ->
     @mineralAmt = 0
-    @mins = []
-    @_rallyResource = @mins[0]
+    @_mins = []
+    @_rallyResource
     super()
 
   rallyResource: -> @_rallyResource
+  mins: -> @_mins
 
   instantiate: ->
     super()
-    @mins = (@sim.makeActor("minPatch", @) for i in [1..8])
+    for i in [1..8]
+      min = @sim.makeActor "minPatch"
+      min.say "setBase", @
+      @_mins.push min
     @harvesters = @sim.makeActor("probe") for i in [1..6]
-    @_rallyResource = @mins[0]
+    @_rallyResource = @_mins[0]
     h.say "gatherFromResource", @_rallyResource for h in @harvesters
 
   getMostAvailableMinPatch: ->
-    @mins = _.sortBy @mins, (m) -> m.targetedBy
-    @mins[0]
+    # TODO you don't understand how this works
+    _(@_mins).min (m) -> m.get "targetedBy"
 
   @defaultState
     messages:
       depositMinerals: (minAmt) ->
         @mineralAmt += minAmt
-        # TODO this is for logging purposes. do something about this
-        @say "mineralsCollected", @mineralAmt
+
+      trainUnitComplete: (unit) ->
+        unit.say "gatherFromResource", @_rallyResource
+
+
+class SCSim.SupplyStructure extends SCSim.Behavior
+  constructor: () ->
+    super()
+
+  instantiate: (supply) ->
+    @supplyAmt = supply
+    super()
+
+  @defaultState
+    messages:
+      trainingComplete: ->
+        # it knows about Trainable thing. Needs an interface/contract?
+        # Are structures inherently trainable? do we need a trainable behavior?
+        # Structure behavior?
+        @say "supplyCapIncreased", @supplyAmt
 
 
 class SCSim.MinPatch extends SCSim.Behavior
-  constructor: (base, startingAmt = 100) ->
-    @amt = startingAmt
-    @_base = base
+  constructor:  ->
+    @amt = 100
+    @_base
     @_targetedBy = 0
     @harvesters = []
     @harvesterMining = null
@@ -92,9 +68,7 @@ class SCSim.MinPatch extends SCSim.Behavior
   targetedBy: -> @_targetedBy
 
   getClosestAvailableResource: ->
-    sortedMins = _(@_base.mins).sortBy (m) -> m.get "targetedBy"
-    for m in sortedMins when m isnt @
-      return m
+    @_base.get "getMostAvailableMinPatch"
 
   isAvailable: ->
     @harvesterMining == null
@@ -104,6 +78,9 @@ class SCSim.MinPatch extends SCSim.Behavior
 
   @defaultState
     messages:
+      setBase: (base) ->
+        @_base = base
+
       harvesterArrived: (harvester) ->
         @harvesters.push harvester
 

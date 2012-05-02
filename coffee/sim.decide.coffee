@@ -9,7 +9,7 @@ class SCSim.Hud
     @minerals = 0
     @gas = 0
     @supply = 0
-    @supplyCap = 0
+    @supplyCap = 10
     @production = {}
     @alerts = [] # crono ready, etc
     @economy = {} # state of crono
@@ -37,6 +37,10 @@ class SCSim.Hud
       (unitName) =>
         u = SCSim.data.units[unitName]
         @supply += u.supply
+    
+    @addEvent "supplyCapIncreased",
+      (e) -> e.args[0],
+      (supplyAmt) => @supplyCap += supplyAmt
 
     @addEvent "purchase",
       (e) -> e.args[0],
@@ -64,3 +68,53 @@ class SCSim.SimRun
 
   start: ->
     @sim.say "start"
+
+
+class SCSim.Simulation extends SCSim.Behavior
+  constructor: (emitter) ->
+    @subActors = {}
+    @emitter = emitter
+    @time = new SCSim.SimTime
+    @beingBuilt = []
+    super()
+    @instantiate()
+
+  makeActor: (name, a, b, c, d) ->
+    actorData = SCSim.data.get(name)
+    instance = new SCSim.Actor actorData.behaviors, a,b,c,d
+    instance.actorName = name
+    instance.sim = @
+    instance.simId = _.uniqueId()
+    instance.emitter = @emitter
+    instance.time = @time
+    @subActors[instance.simId] = instance
+    instance.instantiate?()
+    instance
+
+  getActor: (simId) ->
+    return @subActors[simId]
+
+  @defaultState
+    messages:
+      start: -> @go "running"
+
+  @state "running"
+    update: -> (t) ->
+      @time.step(1)
+      @subActors[actr].update(@time.sec) for actr of @subActors
+
+    messages:
+      buildStructure: (name) ->
+        s = SCSim.data.get "name"
+        @say "purchase", name
+        @beingBuilt.push name
+
+  say: (msgName, a, b, c, d) ->
+    @emitter?.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
+    @messages[msgName]?.call @, a, b, c, d
+
+  get: (name, a, b, c, d) ->
+    if @[name] isnt undefined
+      @[name].call behavior, a, b, c, d
+
+    console.warn("failed to get #{prop}")

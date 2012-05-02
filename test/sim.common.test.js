@@ -70,11 +70,59 @@
 
   })(SCSim.Behavior);
 
+  SCSim.TestInstantiationBehavior = (function(_super) {
+
+    __extends(TestInstantiationBehavior, _super);
+
+    TestInstantiationBehavior.name = 'TestInstantiationBehavior';
+
+    function TestInstantiationBehavior() {
+      this.prop = 0;
+      TestInstantiationBehavior.__super__.constructor.call(this);
+    }
+
+    TestInstantiationBehavior.prototype.instantiate = function(prop) {
+      this.prop = prop;
+      return TestInstantiationBehavior.__super__.instantiate.call(this);
+    };
+
+    TestInstantiationBehavior.defaultState({
+      update: function() {
+        return function() {};
+      }
+    });
+
+    return TestInstantiationBehavior;
+
+  })(SCSim.Behavior);
+
+  describe("SCSim.Actor", function() {
+    return describe("instantiate", function() {
+      return it("should create a behavior with named arguments", function() {
+        var a;
+        a = new SCSim.Actor([
+          {
+            name: "TestInstantiationBehavior",
+            args: [20]
+          }
+        ]);
+        a.instantiate();
+        return a.behaviors.TestInstantiationBehavior.prop.should.equal(20);
+      });
+    });
+  });
+
   describe("SCSim.Behavior", function() {
     describe("blockActor()", function() {
       return it("should take over an actor", function() {
         var a;
-        a = new SCSim.Actor(["TestBehavior", "TestBlockingBehavior"]);
+        a = new SCSim.Actor([
+          {
+            name: "TestBehavior"
+          }, {
+            name: "TestBlockingBehavior"
+          }
+        ]);
         a.instantiate();
         a.behaviors.TestBlockingBehavior.blockActor();
         a.update();
@@ -85,7 +133,13 @@
     return describe("unblockActor()", function() {
       return it("should let all of the Actor's behaviors start updating again", function() {
         var a;
-        a = new SCSim.Actor(["TestBehavior", "TestBlockingBehavior"]);
+        a = new SCSim.Actor([
+          {
+            name: "TestBehavior"
+          }, {
+            name: "TestBlockingBehavior"
+          }
+        ]);
         a.instantiate();
         a.behaviors.TestBlockingBehavior.blockActor();
         a.update();
@@ -104,7 +158,13 @@
     simRun = null;
     SCSim.data.units["testUnit"] = {
       buildTime: 2,
-      behaviors: ["Trainable", "TestBehavior"]
+      behaviors: [
+        {
+          name: "Trainable"
+        }, {
+          name: "TestBehavior"
+        }
+      ]
     };
     beforeEach(function() {
       simRun = new SCSim.SimRun;

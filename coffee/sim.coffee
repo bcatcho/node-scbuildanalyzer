@@ -14,7 +14,7 @@ runSim = (harvesterCount, simLength = 600) ->
 
   simRun = new SCSim.SimRun
   sim = simRun.sim
-  simRun.emitter.observe 'mineralsCollected',
+  simRun.emitter.observe 'depositMinerals',
      (e) => logs.mineralsCollected.push [e.time.sec, e.args[0]/(e.time.sec/60)]
      
   # run the simulation
@@ -22,9 +22,12 @@ runSim = (harvesterCount, simLength = 600) ->
   base = sim.makeActor "nexus"
   simRun.start()
   base.say("trainUnit", 'probe') for i in [1..harvesterCount]
-
   simRun.update() for i in [1..simTickLength]
   console.profileEnd()
+
+  # testing grounds
+  console.log sim.makeActor("pylon")
+
 
   # process the logs
   results =

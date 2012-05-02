@@ -53,8 +53,10 @@ class SCSim.Behavior
     @states[@stateName].enterState?.call @, a, b, c, d
 
   say: (msgName, a, b, c, d) ->
-    @emitter.fire msgName, {name: msgName, @time, @simId, args: [a, b, c, d]}
-    @messages[msgName]?.call @, a, b, c, d
+    @actor.say msgName, a, b, c, d
+
+  get: (msgName, a, b, c, d) ->
+    @actor.get msgName, a, b, c, d
 
   @state: (name, stateObj) ->
     if not @::states
@@ -80,25 +82,21 @@ class SCSim.Behavior
 
 
 class SCSim.Actor
-  constructor: (behaviors, a, b, c, d) ->
+  constructor: (behaviors) ->
+    @behaviorConfiguration = behaviors
     @behaviors = {}
-    @addBehavior(bName, a, b, c, d) for bName in behaviors
     @blockingBehavior = undefined
 
-  addBehavior: (bName, a, b, c, d) ->
-    behavior = new SCSim[bName] a, b, c, d
-    behavior.actor = @
-    @behaviors[bName] = behavior
-    # parse all properties that begin with "pub" or something
-    # and place in a common thing?
-
   instantiate: ->
-    for n, behavior of @behaviors
+    for b in @behaviorConfiguration
+      behavior = new SCSim[b.name]
+      behavior.actor = @
       behavior.simId = @simId
       behavior.emitter = @emitter
       behavior.time = @time
       behavior.sim = @sim
-      behavior.instantiate?()
+      behavior.instantiate?.apply behavior, b.args
+      @behaviors[b.name] = behavior
 
   startBlockingWithBehavior: (behavior) ->
     if @blockingBehavior isnt undefined

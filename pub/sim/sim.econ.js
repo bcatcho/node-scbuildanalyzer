@@ -12,82 +12,6 @@
 
   _ = root._;
 
-  SCSim.Simulation = (function(_super) {
-
-    __extends(Simulation, _super);
-
-    Simulation.name = 'Simulation';
-
-    function Simulation(emitter) {
-      this.subActors = {};
-      this.emitter = emitter;
-      this.time = new SCSim.SimTime;
-      this.beingBuilt = [];
-      Simulation.__super__.constructor.call(this);
-      this.instantiate();
-    }
-
-    Simulation.prototype.makeActor = function(name, a, b, c, d) {
-      var actorData, instance;
-      actorData = SCSim.data.get(name);
-      instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
-      instance.actorName = name;
-      instance.sim = this;
-      instance.simId = _.uniqueId();
-      instance.emitter = this.emitter;
-      instance.time = this.time;
-      this.subActors[instance.simId] = instance;
-      if (typeof instance.instantiate === "function") {
-        instance.instantiate();
-      }
-      return instance;
-    };
-
-    Simulation.prototype.trainActor = function(name, callback) {
-      var actor;
-      actor = this.makeActor(name);
-      actor.say("addCallback", callback);
-      return actor;
-    };
-
-    Simulation.prototype.getActor = function(simId) {
-      return this.subActors[simId];
-    };
-
-    Simulation.defaultState({
-      messages: {
-        start: function() {
-          return this.go("running");
-        }
-      }
-    });
-
-    Simulation.state("running", {
-      update: function() {
-        return function(t) {
-          var actr, _results;
-          this.time.step(1);
-          _results = [];
-          for (actr in this.subActors) {
-            _results.push(this.subActors[actr].update(this.time.sec));
-          }
-          return _results;
-        };
-      },
-      messages: {
-        buildStructure: function(name) {
-          var s;
-          s = SCSim.data.get("name");
-          this.say("purchase", name);
-          return this.beingBuilt.push(name);
-        }
-      }
-    });
-
-    return Simulation;
-
-  })(SCSim.Behavior);
-
   SCSim.PrimaryStructure = (function(_super) {
 
     __extends(PrimaryStructure, _super);
@@ -96,8 +20,8 @@
 
     function PrimaryStructure() {
       this.mineralAmt = 0;
-      this.mins = [];
-      this._rallyResource = this.mins[0];
+      this._mins = [];
+      this._rallyResource;
       PrimaryStructure.__super__.constructor.call(this);
     }
 
@@ -105,47 +29,76 @@
       return this._rallyResource;
     };
 
+    PrimaryStructure.prototype.mins = function() {
+      return this._mins;
+    };
+
     PrimaryStructure.prototype.instantiate = function() {
-      var h, i, _i, _j, _len, _ref1, _results;
+      var h, i, min, _i, _j, _k, _len, _ref1, _results;
       PrimaryStructure.__super__.instantiate.call(this);
-      this.mins = (function() {
-        var _i, _results;
-        _results = [];
-        for (i = _i = 1; _i <= 8; i = ++_i) {
-          _results.push(this.sim.makeActor("minPatch", this));
-        }
-        return _results;
-      }).call(this);
-      for (i = _i = 1; _i <= 6; i = ++_i) {
+      for (i = _i = 1; _i <= 8; i = ++_i) {
+        min = this.sim.makeActor("minPatch");
+        min.say("setBase", this);
+        this._mins.push(min);
+      }
+      for (i = _j = 1; _j <= 6; i = ++_j) {
         this.harvesters = this.sim.makeActor("probe");
       }
-      this._rallyResource = this.mins[0];
+      this._rallyResource = this._mins[0];
       _ref1 = this.harvesters;
       _results = [];
-      for (_j = 0, _len = _ref1.length; _j < _len; _j++) {
-        h = _ref1[_j];
+      for (_k = 0, _len = _ref1.length; _k < _len; _k++) {
+        h = _ref1[_k];
         _results.push(h.say("gatherFromResource", this._rallyResource));
       }
       return _results;
     };
 
     PrimaryStructure.prototype.getMostAvailableMinPatch = function() {
-      this.mins = _.sortBy(this.mins, function(m) {
-        return m.targetedBy;
+      return _(this._mins).min(function(m) {
+        return m.get("targetedBy");
       });
-      return this.mins[0];
     };
 
     PrimaryStructure.defaultState({
       messages: {
         depositMinerals: function(minAmt) {
-          this.mineralAmt += minAmt;
-          return this.say("mineralsCollected", this.mineralAmt);
+          return this.mineralAmt += minAmt;
+        },
+        trainUnitComplete: function(unit) {
+          return unit.say("gatherFromResource", this._rallyResource);
         }
       }
     });
 
     return PrimaryStructure;
+
+  })(SCSim.Behavior);
+
+  SCSim.SupplyStructure = (function(_super) {
+
+    __extends(SupplyStructure, _super);
+
+    SupplyStructure.name = 'SupplyStructure';
+
+    function SupplyStructure() {
+      SupplyStructure.__super__.constructor.call(this);
+    }
+
+    SupplyStructure.prototype.instantiate = function(supply) {
+      this.supplyAmt = supply;
+      return SupplyStructure.__super__.instantiate.call(this);
+    };
+
+    SupplyStructure.defaultState({
+      messages: {
+        trainingComplete: function() {
+          return this.say("supplyCapIncreased", this.supplyAmt);
+        }
+      }
+    });
+
+    return SupplyStructure;
 
   })(SCSim.Behavior);
 
@@ -155,12 +108,9 @@
 
     MinPatch.name = 'MinPatch';
 
-    function MinPatch(base, startingAmt) {
-      if (startingAmt == null) {
-        startingAmt = 100;
-      }
-      this.amt = startingAmt;
-      this._base = base;
+    function MinPatch() {
+      this.amt = 100;
+      this._base;
       this._targetedBy = 0;
       this.harvesters = [];
       this.harvesterMining = null;
@@ -177,16 +127,7 @@
     };
 
     MinPatch.prototype.getClosestAvailableResource = function() {
-      var m, sortedMins, _i, _len;
-      sortedMins = _(this._base.mins).sortBy(function(m) {
-        return m.get("targetedBy");
-      });
-      for (_i = 0, _len = sortedMins.length; _i < _len; _i++) {
-        m = sortedMins[_i];
-        if (m !== this) {
-          return m;
-        }
-      }
+      return this._base.get("getMostAvailableMinPatch");
     };
 
     MinPatch.prototype.isAvailable = function() {
@@ -199,6 +140,9 @@
 
     MinPatch.defaultState({
       messages: {
+        setBase: function(base) {
+          return this._base = base;
+        },
         harvesterArrived: function(harvester) {
           return this.harvesters.push(harvester);
         },

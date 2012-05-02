@@ -15,7 +15,7 @@ class SCSim.Trainable extends SCSim.Behavior
   @defaultState
     update: -> ->
       if @startTime + @buildTime <= @time.sec
-        @say "trainingComplete"
+        @say "complete"
 
     enterState: ->
       @blockActor()
@@ -25,12 +25,14 @@ class SCSim.Trainable extends SCSim.Behavior
       addCallback: (fn) ->
         @callbacks.push(fn)
 
-      trainingComplete: ->
+      complete: ->
         @unblockActor()
         c(@actor) for c in @callbacks
         @go "trained"
 
-  @state "trained", {}
+  @state "trained"
+    enterState: ->
+      @say "trainingComplete"
 
 
 class SCSim.Trainer extends SCSim.Behavior
@@ -41,8 +43,10 @@ class SCSim.Trainer extends SCSim.Behavior
 
   updateBuildQueue: ->
     if @building is undefined and @queued.length > 0
-      @building = @sim.trainActor @queued[0],
-        (unit) => @say "trainUnitComplete", unit
+      @building = @sim.makeActor @queued[0]
+      # Notify the whole actor when the unit completes so that other behaviors
+      # can add their own hooks
+      @building.say "addCallback", ((unit) => @say "trainUnitComplete", unit)
       @queued = @queued[1..]
 
   @defaultState
@@ -52,9 +56,6 @@ class SCSim.Trainer extends SCSim.Behavior
         @updateBuildQueue()
 
       trainUnitComplete: (unit) ->
-        # TODO it would be nice if i another behavior could specify this
-        unit.say "gatherFromResource", @actor.get "rallyResource"
-
         @building = undefined
         @updateBuildQueue()
 
@@ -64,5 +65,5 @@ class SCSim.WarpInBuilder extends SCSim.Behavior
 
   @defaultState
     messages:
-      build: (name) ->
-        @sim.say "trainActor", name
+      build: (structureName) ->
+        @sim.say "trainActor", structureName

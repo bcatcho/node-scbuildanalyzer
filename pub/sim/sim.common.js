@@ -103,14 +103,11 @@
     };
 
     Behavior.prototype.say = function(msgName, a, b, c, d) {
-      var _ref1;
-      this.emitter.fire(msgName, {
-        name: msgName,
-        time: this.time,
-        simId: this.simId,
-        args: [a, b, c, d]
-      });
-      return (_ref1 = this.messages[msgName]) != null ? _ref1.call(this, a, b, c, d) : void 0;
+      return this.actor.say(msgName, a, b, c, d);
+    };
+
+    Behavior.prototype.get = function(msgName, a, b, c, d) {
+      return this.actor.get(msgName, a, b, c, d);
     };
 
     Behavior.state = function(name, stateObj) {
@@ -157,34 +154,28 @@
 
     Actor.name = 'Actor';
 
-    function Actor(behaviors, a, b, c, d) {
-      var bName, _i, _len;
+    function Actor(behaviors) {
+      this.behaviorConfiguration = behaviors;
       this.behaviors = {};
-      for (_i = 0, _len = behaviors.length; _i < _len; _i++) {
-        bName = behaviors[_i];
-        this.addBehavior(bName, a, b, c, d);
-      }
       this.blockingBehavior = void 0;
     }
 
-    Actor.prototype.addBehavior = function(bName, a, b, c, d) {
-      var behavior;
-      behavior = new SCSim[bName](a, b, c, d);
-      behavior.actor = this;
-      return this.behaviors[bName] = behavior;
-    };
-
     Actor.prototype.instantiate = function() {
-      var behavior, n, _ref1, _results;
-      _ref1 = this.behaviors;
+      var b, behavior, _i, _len, _ref1, _ref2, _results;
+      _ref1 = this.behaviorConfiguration;
       _results = [];
-      for (n in _ref1) {
-        behavior = _ref1[n];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        b = _ref1[_i];
+        behavior = new SCSim[b.name];
+        behavior.actor = this;
         behavior.simId = this.simId;
         behavior.emitter = this.emitter;
         behavior.time = this.time;
         behavior.sim = this.sim;
-        _results.push(typeof behavior.instantiate === "function" ? behavior.instantiate() : void 0);
+        if ((_ref2 = behavior.instantiate) != null) {
+          _ref2.apply(behavior, b.args);
+        }
+        _results.push(this.behaviors[b.name] = behavior);
       }
       return _results;
     };

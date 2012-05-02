@@ -21,7 +21,7 @@
     };
     simRun = new SCSim.SimRun;
     sim = simRun.sim;
-    simRun.emitter.observe('mineralsCollected', function(e) {
+    simRun.emitter.observe('depositMinerals', function(e) {
       return logs.mineralsCollected.push([e.time.sec, e.args[0] / (e.time.sec / 60)]);
     });
     console.profile();
@@ -34,6 +34,7 @@
       simRun.update();
     }
     console.profileEnd();
+    console.log(sim.makeActor("pylon"));
     results = {
       data: [],
       markings: []

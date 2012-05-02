@@ -4,7 +4,7 @@ SCSim = root.SCSim ? {}; root.SCSim = SCSim
 
 
 # Unit Obj Helper
-u = (min, gas, buildTime, supply, behaviors...) ->
+unit = (min, gas, buildTime, supply, behaviors...) ->
   min: min
   gas: gas
   buildTime: buildTime
@@ -12,8 +12,8 @@ u = (min, gas, buildTime, supply, behaviors...) ->
   behaviors: behaviors
 
 
-# Building Obj Helper
-b = (min, gas, buildTime, behaviors...) ->
+# Structure Obj Helper
+structure = (min, gas, buildTime, behaviors...) ->
   min: min
   gas: gas
   buildTime: buildTime
@@ -21,9 +21,12 @@ b = (min, gas, buildTime, behaviors...) ->
 
 
 # Neutral Obj Helper
-n = (behaviors...) ->
+neutral = (behaviors...) ->
   behaviors: behaviors
 
+behave = (name, args...) ->
+  name: name
+  args: args
 
 SCSim.config =
   secsPerTick: .5 # FIXME? this affects the precision of harvester decisions
@@ -32,14 +35,14 @@ SCSim.config =
 
 SCSim.data =
   get: (name) ->
-    return @units[name] || @buildings[name] || @neutral[name]
+    return @units[name] || @structure[name] || @neutral[name]
 
   units:
-    probe: u 50, 0, 17, 1, "Harvester", "Trainable"
+    probe: unit 50, 0, 17, 1, behave("Harvester"), behave("Trainable")
 
-  buildings:
-    pylon: b 100, 0, 25
-    nexus: b 400, 0, 100, "PrimaryStructure", "Trainer"
+  structure:
+    pylon: structure 100, 0, 25, behave("Trainable"), behave("SupplyStructure", 10)
+    nexus: structure 400, 0, 100, behave("PrimaryStructure"), behave("Trainer")
 
   neutral:
-    minPatch: n "MinPatch"
+    minPatch: neutral behave("MinPatch")

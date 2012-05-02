@@ -30,10 +30,31 @@ class SCSim.TestBlockingBehavior extends SCSim.Behavior
       block: -> @block()
 
 
+class SCSim.TestInstantiationBehavior extends SCSim.Behavior
+  constructor: ->
+    @prop = 0
+    super()
+
+  instantiate: (prop) ->
+    @prop = prop
+    super()
+
+  @defaultState
+    update: -> ->
+
+
+describe "SCSim.Actor", ->
+  describe "instantiate", ->
+    it "should create a behavior with named arguments", ->
+      a = new SCSim.Actor [{name: "TestInstantiationBehavior", args: [20] }]
+      a.instantiate()
+      a.behaviors.TestInstantiationBehavior.prop.should.equal 20
+
+
 describe "SCSim.Behavior", ->
   describe "blockActor()", ->
     it "should take over an actor", ->
-      a = new SCSim.Actor ["TestBehavior", "TestBlockingBehavior"]
+      a = new SCSim.Actor [{name: "TestBehavior"}, {name:"TestBlockingBehavior"}]
       a.instantiate()
       a.behaviors.TestBlockingBehavior.blockActor()
       a.update()
@@ -42,7 +63,7 @@ describe "SCSim.Behavior", ->
   
   describe "unblockActor()", ->
     it "should let all of the Actor's behaviors start updating again", ->
-      a = new SCSim.Actor ["TestBehavior", "TestBlockingBehavior"]
+      a = new SCSim.Actor [{name: "TestBehavior"}, {name:"TestBlockingBehavior"}]
       a.instantiate()
       a.behaviors.TestBlockingBehavior.blockActor()
       a.update()
@@ -58,7 +79,7 @@ describe "SCSim.Trainable", ->
   simRun = null
   SCSim.data.units["testUnit"] =
     buildTime: 2
-    behaviors: ["Trainable", "TestBehavior"]
+    behaviors: [{name: "Trainable"}, {name: "TestBehavior"}]
 
   beforeEach ->
     simRun = new SCSim.SimRun

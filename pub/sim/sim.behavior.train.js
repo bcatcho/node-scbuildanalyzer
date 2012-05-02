@@ -31,7 +31,7 @@
       update: function() {
         return function() {
           if (this.startTime + this.buildTime <= this.time.sec) {
-            return this.say("trainingComplete");
+            return this.say("complete");
           }
         };
       },
@@ -43,7 +43,7 @@
         addCallback: function(fn) {
           return this.callbacks.push(fn);
         },
-        trainingComplete: function() {
+        complete: function() {
           var c, _i, _len, _ref1;
           this.unblockActor();
           _ref1 = this.callbacks;
@@ -56,7 +56,11 @@
       }
     });
 
-    Trainable.state("trained", {});
+    Trainable.state("trained", {
+      enterState: function() {
+        return this.say("trainingComplete");
+      }
+    });
 
     return Trainable;
 
@@ -77,9 +81,10 @@
     Trainer.prototype.updateBuildQueue = function() {
       var _this = this;
       if (this.building === void 0 && this.queued.length > 0) {
-        this.building = this.sim.trainActor(this.queued[0], function(unit) {
+        this.building = this.sim.makeActor(this.queued[0]);
+        this.building.say("addCallback", (function(unit) {
           return _this.say("trainUnitComplete", unit);
-        });
+        }));
         return this.queued = this.queued.slice(1);
       }
     };
@@ -91,7 +96,6 @@
           return this.updateBuildQueue();
         },
         trainUnitComplete: function(unit) {
-          unit.say("gatherFromResource", this.actor.get("rallyResource"));
           this.building = void 0;
           return this.updateBuildQueue();
         }
@@ -112,8 +116,8 @@
 
     WarpInBuilder.defaultState({
       messages: {
-        build: function(name) {
-          return this.sim.say("trainActor", name);
+        build: function(structureName) {
+          return this.sim.say("trainActor", structureName);
         }
       }
     });
