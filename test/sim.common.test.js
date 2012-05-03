@@ -156,20 +156,18 @@
     actr = null;
     sim = null;
     simRun = null;
-    SCSim.data.units["testUnit"] = {
-      buildTime: 2,
-      behaviors: [
-        {
-          name: "Trainable"
-        }, {
-          name: "TestBehavior"
-        }
-      ]
-    };
     beforeEach(function() {
+      var gameData;
+      gameData = new SCSim.GameData;
+      gameData.addUnit("testUnit", 0, 0, 2, 0, {
+        name: "Trainable"
+      }, {
+        name: "TestBehavior"
+      });
       simRun = new SCSim.SimRun;
       simRun.start();
       sim = simRun.sim;
+      sim.gameData = gameData;
       return actr = sim.makeActor("testUnit");
     });
     it("should aquire the correct build time", function() {

@@ -19,15 +19,10 @@ class SCSim.Hud
     @emitter = emitter
     @setupEvents()
 
-  exampleProduction: ->
-    thing: "name"
-    timeLeft: 0 #secs
-    alertWhenDone: "name is done"
-
   addEvent: (eventName, filter, callBack) ->
     @emitter.observe eventName, (eventObj) -> callBack(filter(eventObj))
 
-  setupEvents:  ->
+  setupEvents: ->
     @addEvent "depositMinerals",
       (e) -> e.args[0],
       (minAmt) => @minerals += minAmt
@@ -37,7 +32,7 @@ class SCSim.Hud
       (unitName) =>
         u = SCSim.data.units[unitName]
         @supply += u.supply
-    
+
     @addEvent "supplyCapIncreased",
       (e) -> e.args[0],
       (supplyAmt) => @supplyCap += supplyAmt
@@ -50,8 +45,33 @@ class SCSim.Hud
         @gas -= u.gas
 
 
+class SCSim.GameRules
+  constructor: (@gameData) ->
+
+  canTrainUnit: (unitName, hud) ->
+    unit = @gameData.get unitName
+    constraints = [@canAfford, @hasEnoughSupply, @hasTechPath]
+    constraints.reduce ((acc, fn) -> acc and fn unit, hud), true
+
+  canAfford: (data, hud) ->
+    hud.gas >= data.gas and hud.minerals >= data.min
+
+  hasEnoughSupply: (data, hud) ->
+    data.supply <= hud.supply + hud.supplyCap
+
+  hasTechPath: (data, hud) ->
+    true
+
+
+# An abstraction to represent how a player would normally control the game
+# XXX should this use a fluent interface?
+# select probeDoingTheLeastWork train structure "name"
+# GetHarvesterFrom "gas", WarpIn "gateway", ReturnTo "gas"
+class SCSim.VirtualControls
+
+
+# takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
-  constructor: ->
 
 
 class SCSim.SimRun
@@ -72,6 +92,7 @@ class SCSim.SimRun
 
 class SCSim.Simulation extends SCSim.Behavior
   constructor: (emitter) ->
+    @gameData = SCSim.data
     @subActors = {}
     @emitter = emitter
     @time = new SCSim.SimTime
@@ -80,7 +101,7 @@ class SCSim.Simulation extends SCSim.Behavior
     @instantiate()
 
   makeActor: (name, a, b, c, d) ->
-    actorData = SCSim.data.get(name)
+    actorData = @gameData.get(name)
     instance = new SCSim.Actor actorData.behaviors, a,b,c,d
     instance.actorName = name
     instance.sim = @

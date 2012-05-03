@@ -23,7 +23,7 @@
     }
 
     Trainable.prototype.instantiate = function() {
-      this.buildTime = (SCSim.data.get(this.actor.actorName)).buildTime;
+      this.buildTime = (this.sim.gameData.get(this.actor.actorName)).buildTime;
       return Trainable.__super__.instantiate.call(this);
     };
 

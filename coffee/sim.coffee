@@ -18,12 +18,12 @@ runSim = (harvesterCount, simLength = 600) ->
      (e) => logs.mineralsCollected.push [e.time.sec, e.args[0]/(e.time.sec/60)]
      
   # run the simulation
-  console.profile()
+  #console.profile()
   base = sim.makeActor "nexus"
   simRun.start()
   base.say("trainUnit", 'probe') for i in [1..harvesterCount]
   simRun.update() for i in [1..simTickLength]
-  console.profileEnd()
+  #console.profileEnd()
 
   # testing grounds
   console.log sim.makeActor("pylon")

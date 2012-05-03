@@ -3,46 +3,61 @@ root = exports ? this
 SCSim = root.SCSim ? {}; root.SCSim = SCSim
 
 
-# Unit Obj Helper
-unit = (min, gas, buildTime, supply, behaviors...) ->
-  min: min
-  gas: gas
-  buildTime: buildTime
-  supply: supply
-  behaviors: behaviors
-
-
-# Structure Obj Helper
-structure = (min, gas, buildTime, behaviors...) ->
-  min: min
-  gas: gas
-  buildTime: buildTime
-  behaviors: behaviors
-
-
-# Neutral Obj Helper
-neutral = (behaviors...) ->
-  behaviors: behaviors
-
-behave = (name, args...) ->
-  name: name
-  args: args
-
 SCSim.config =
   secsPerTick: .5 # FIXME? this affects the precision of harvester decisions
   harvesterOverlapThreshold: .3 # this number + secs Per Tick is important
 
 
-SCSim.data =
+class SCSim.GameData
+  constructor: ->
+    @units = {}
+    @structures = {}
+    @neutrals = {}
+
+  addUnit: (name, min, gas, buildTime, supply, behaviors...) ->
+    @units[name] =
+      min: min
+      gas: gas
+      buildTime: buildTime
+      supply: supply
+      behaviors: behaviors
+  
+  addStructure: (name, min, gas, buildTime, behaviors...) ->
+    @structures[name] =
+      min: min
+      gas: gas
+      buildTime: buildTime
+      behaviors: behaviors
+
+  addNeutral: (name, behaviors...) ->
+    @neutrals[name] =
+      behaviors: behaviors
+
   get: (name) ->
-    return @units[name] || @structure[name] || @neutral[name]
+    return @units[name] || @structures[name] || @neutrals[name]
 
-  units:
-    probe: unit 50, 0, 17, 1, behave("Harvester"), behave("Trainable")
+# behavior helper
+behave = (name, args...) ->
+  name: name
+  args: args
 
-  structure:
-    pylon: structure 100, 0, 25, behave("Trainable"), behave("SupplyStructure", 10)
-    nexus: structure 400, 0, 100, behave("PrimaryStructure"), behave("Trainer")
+units = [
+  ["probe", 50, 0, 17, 1, behave("Harvester"), behave("Trainable")]
+]
 
-  neutral:
-    minPatch: neutral behave("MinPatch")
+structures = [
+  ["pylon", 100, 0, 25, behave("Trainable"), behave("SupplyStructure", 10)]
+  ["nexus", 400, 0, 100, behave("PrimaryStructure"), behave("Trainer")]
+]
+
+neutrals = [
+  ["minPatch", behave("MinPatch")]
+]
+
+SCSim.loadDefaultData = (gameData) ->
+  gameData.addUnit.apply gameData, u for u in units
+  gameData.addStructure.apply gameData, s for s in structures
+  gameData.addNeutral.apply gameData, n for n in neutrals
+
+SCSim.data = new SCSim.GameData
+SCSim.loadDefaultData SCSim.data

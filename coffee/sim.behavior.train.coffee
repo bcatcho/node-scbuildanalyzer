@@ -9,7 +9,7 @@ class SCSim.Trainable extends SCSim.Behavior
     @callbacks = []
 
   instantiate: ->
-    @buildTime = (SCSim.data.get @actor.actorName).buildTime
+    @buildTime = (@sim.gameData.get @actor.actorName).buildTime
     super()
 
   @defaultState

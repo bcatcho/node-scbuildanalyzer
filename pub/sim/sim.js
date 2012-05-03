@@ -24,7 +24,6 @@
     simRun.emitter.observe('depositMinerals', function(e) {
       return logs.mineralsCollected.push([e.time.sec, e.args[0] / (e.time.sec / 60)]);
     });
-    console.profile();
     base = sim.makeActor("nexus");
     simRun.start();
     for (i = _i = 1; 1 <= harvesterCount ? _i <= harvesterCount : _i >= harvesterCount; i = 1 <= harvesterCount ? ++_i : --_i) {
@@ -33,7 +32,6 @@
     for (i = _j = 1; 1 <= simTickLength ? _j <= simTickLength : _j >= simTickLength; i = 1 <= simTickLength ? ++_j : --_j) {
       simRun.update();
     }
-    console.profileEnd();
     console.log(sim.makeActor("pylon"));
     results = {
       data: [],

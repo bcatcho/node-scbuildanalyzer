@@ -31,14 +31,6 @@
       this.setupEvents();
     }
 
-    Hud.prototype.exampleProduction = function() {
-      return {
-        thing: "name",
-        timeLeft: 0,
-        alertWhenDone: "name is done"
-      };
-    };
-
     Hud.prototype.addEvent = function(eventName, filter, callBack) {
       return this.emitter.observe(eventName, function(eventObj) {
         return callBack(filter(eventObj));
@@ -75,6 +67,49 @@
     };
 
     return Hud;
+
+  })();
+
+  SCSim.GameRules = (function() {
+
+    GameRules.name = 'GameRules';
+
+    function GameRules(gameData) {
+      this.gameData = gameData;
+    }
+
+    GameRules.prototype.canTrainUnit = function(unitName, hud) {
+      var constraints, unit;
+      unit = this.gameData.get(unitName);
+      constraints = [this.canAfford, this.hasEnoughSupply, this.hasTechPath];
+      return constraints.reduce((function(acc, fn) {
+        return acc && fn(unit, hud);
+      }), true);
+    };
+
+    GameRules.prototype.canAfford = function(data, hud) {
+      return hud.gas >= data.gas && hud.minerals >= data.min;
+    };
+
+    GameRules.prototype.hasEnoughSupply = function(data, hud) {
+      return data.supply <= hud.supply + hud.supplyCap;
+    };
+
+    GameRules.prototype.hasTechPath = function(data, hud) {
+      return true;
+    };
+
+    return GameRules;
+
+  })();
+
+  SCSim.VirtualControls = (function() {
+
+    VirtualControls.name = 'VirtualControls';
+
+    function VirtualControls() {}
+
+    return VirtualControls;
 
   })();
 
@@ -118,6 +153,7 @@
     Simulation.name = 'Simulation';
 
     function Simulation(emitter) {
+      this.gameData = SCSim.data;
       this.subActors = {};
       this.emitter = emitter;
       this.time = new SCSim.SimTime;
@@ -128,7 +164,7 @@
 
     Simulation.prototype.makeActor = function(name, a, b, c, d) {
       var actorData, instance;
-      actorData = SCSim.data.get(name);
+      actorData = this.gameData.get(name);
       instance = new SCSim.Actor(actorData.behaviors, a, b, c, d);
       instance.actorName = name;
       instance.sim = this;
