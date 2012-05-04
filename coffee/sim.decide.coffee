@@ -28,10 +28,11 @@ class SCSim.Hud
       (minAmt) => @minerals += minAmt
 
     @addEvent "trainUnitComplete",
-      (e) -> e.args[0].actorName,
-      (unitName) =>
-        u = SCSim.data.units[unitName]
+      (e) -> e.args[0],
+      (unit) =>
+        u = SCSim.data.units[unit.actorName]
         @supply += u.supply
+        @units[unit.actorName] = unit
 
     @addEvent "supplyCapIncreased",
       (e) -> e.args[0],
@@ -46,35 +47,47 @@ class SCSim.Hud
 
 
 class SCSim.GameRules
-  constructor: (@gameData) ->
+  constructor: (gameData) ->
+    @gameData = gameData
 
   canTrainUnit: (unitName, hud) ->
-    unit = @gameData.get unitName
-    constraints = [@canAfford, @hasEnoughSupply, @hasTechPath]
-    constraints.reduce ((acc, fn) -> acc and fn unit, hud), true
+    data = @gameData.get unitName
+    @meetsCriteria data, hud, @canAfford, @hasEnoughSupply, @hasTechPath
 
   canAfford: (data, hud) ->
-    hud.gas >= data.gas and hud.minerals >= data.min
+    (hud.gas >= data.gas and hud.minerals >= data.min)
 
   hasEnoughSupply: (data, hud) ->
-    data.supply <= hud.supply + hud.supplyCap
+    (data.supply <= hud.supply + hud.supplyCap)
 
   hasTechPath: (data, hud) ->
     true
 
+  meetsCriteria: (data, hud, criteria...) ->
+    criteria.reduce ((acc, c) -> acc and c(data, hud)), true
+
+class TESTCMD
+  @select: (name, c) ->
+    (x) => (c.call @) x[name]
+  @andSay: (msg) ->
+    (unit) => unit.say msg
+
+# eg: (TESTCMD.select "probe", -> @andSay msg)(HUD)
 
 # An abstraction to represent how a player would normally control the game
-# XXX should this use a fluent interface?
-# select probeDoingTheLeastWork train structure "name"
-# GetHarvesterFrom "gas", WarpIn "gateway", ReturnTo "gas"
-class SCSim.VirtualControls
-
+class SCSim.Cmd
+  selectUnit: (name, cont) ->
+    (hud) -> hud.units[name]
 
 # takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
-
+  constructor: ->
+  
+  decideNextCommand: (hud) ->
+    
 
 class SCSim.SimRun
+  # FIXME make him load the SCSim.data
   constructor: (smarts) ->
     @smarts = smarts
     @emitter = new SCSim.EventEmitter

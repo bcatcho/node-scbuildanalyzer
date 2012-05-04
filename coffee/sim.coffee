@@ -68,6 +68,7 @@ options =
     mode: "time"
     timeformat: "%M:%S"
 
+
 series = []
 {series, options} = addSeries series, options, 14
 $.plot $("#placeholder"), series, options
