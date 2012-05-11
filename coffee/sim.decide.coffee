@@ -14,7 +14,7 @@ class SCSim.Hud
     @alerts = [] # crono ready, etc
     @economy = {} # state of crono
     @units = {} # my units (Maybe?)
-    @buildings = {} # my buildings (Maybe ?)
+    @structures = {} # my buildings (Maybe ?)
     @events = {}
     @emitter = emitter
     @setupEvents()
@@ -73,37 +73,41 @@ class SCSim.GameRules
 
 
 # An abstraction to represent how a player would normally control the game
-class SCSim.Cmd # this seems ridiculous
-  @selectUnit: (name, cont) ->
-    (hud) =>
-      @follow cont, hud.units[name][0] # FIXME this is bad
+class SCSim.Cmd
+  constructor: (@subject, @verbs = [])->
 
-  @andSay: (msg, a, b, c, d) ->
-    (unit) => unit.say msg, a, b, c, d
+  @selectA: (name) ->
+    cmd = new @ ((hud) -> hud.structures[name]?[0] || hud.units[name]?[0])
+    cmd
 
-  @follow: (fn, param) ->
-    if fn
-      (fn.call @) param
-    else
-      param
+  say: (msg, a, b, c, d) ->
+    @verbs.push (unit) ->
+      unit.say msg, a, b, c, d
+    return @
+
+  execute: (hud) ->
+    s = @subject(hud)
+    for v in @verbs
+      v(s)
 
 
 # takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
   constructor: ->
-  
+
   decideNextCommand: (hud) ->
     # input state, output commands
 
-    
+
 class SCSim.SimRun
   # FIXME make him load the SCSim.data
-  constructor: (smarts) ->
+  constructor: (gameData, smarts) ->
+    @gameData = gameData ? SCSim.data
     @smarts = smarts
     @emitter = new SCSim.EventEmitter
     @hud = new SCSim.Hud @emitter
     # what about configs?
-    @sim = new SCSim.Simulation @emitter
+    @sim = new SCSim.Simulation @emitter, @gameData
 
   update: ->
     #commands = @smarts.decide @hud
@@ -114,10 +118,8 @@ class SCSim.SimRun
 
 
 class SCSim.Simulation extends SCSim.Behavior
-  constructor: (emitter) ->
-    @gameData = SCSim.data
+  constructor: (@emitter, @gameData) ->
     @subActors = {}
-    @emitter = emitter
     @time = new SCSim.SimTime
     @beingBuilt = []
     super()

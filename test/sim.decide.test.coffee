@@ -35,22 +35,66 @@ describe "SCSim.GameRules", ->
       result.should.be.false
 
 
+class SCSim.TestCmdBehavior extends SCSim.Behavior
+  constructor: ->
+    @_prop = 0
+    super()
+
+  prop: -> @_prop
+
+  @defaultState
+    messages:
+      prop100: -> @_prop = 100
+      propTimes2: -> @_prop *= 2
+
+
 describe "SCSim.Cmd", ->
+  gameData = new SCSim.GameData
+  gameData.addUnit "testUnit", 0, 0, 2, 0, {name: "TestCmdBehavior"}
+
   describe "select()", ->
     hud = null
     sim = null
     beforeEach ->
-      simRun = new SCSim.SimRun
+      simRun = new SCSim.SimRun gameData
       sim = simRun.sim
       hud = simRun.hud
 
-    it "should return a fn to select the specified actor from a HUD", ->
-      unit = sim.makeActor "probe"
+    it "constructs a command on selectUnit", ->
+      unit = sim.makeActor "testUnit"
       hud.addUnit unit
 
-      cmd = SCSim.Cmd.selectUnit "probe"
+      cmd = SCSim.Cmd.selectA "testUnit"
 
-      unit.should.equal cmd(hud)
+      cmd.should.be.an.instanceOf SCSim.Cmd
+
+  describe "say()", ->
+    hud = null
+    sim = null
+    beforeEach ->
+      simRun = new SCSim.SimRun gameData
+      sim = simRun.sim
+      hud = simRun.hud
+
+    it "returns a cmd that modifies a specific type of actor", ->
+      unit = sim.makeActor "testUnit"
+      hud.addUnit unit
+
+      cmd = SCSim.Cmd.selectA("testUnit").say "prop100"
+      cmd.execute hud
+
+      unit.get("prop").should.equal 100
+
+    it "can be chained with other commands", ->
+      unit = sim.makeActor "testUnit"
+      hud.addUnit unit
+
+      cmd = SCSim.Cmd.selectA("testUnit")
+                      .say("prop100")
+                      .say("propTimes2")
+      cmd.execute hud
+
+      unit.get("prop").should.equal 200
 
 
 

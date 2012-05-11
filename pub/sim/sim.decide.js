@@ -26,7 +26,7 @@
       this.alerts = [];
       this.economy = {};
       this.units = {};
-      this.buildings = {};
+      this.structures = {};
       this.events = {};
       this.emitter = emitter;
       this.setupEvents();
@@ -121,28 +121,37 @@
 
     Cmd.name = 'Cmd';
 
-    function Cmd() {}
+    function Cmd(subject, verbs) {
+      this.subject = subject;
+      this.verbs = verbs != null ? verbs : [];
+    }
 
-    Cmd.selectUnit = function(name, cont) {
-      var _this = this;
-      return function(hud) {
-        return _this.follow(cont, hud.units[name][0]);
-      };
+    Cmd.selectA = function(name) {
+      var cmd;
+      cmd = new this((function(hud) {
+        var _ref1, _ref2;
+        return ((_ref1 = hud.structures[name]) != null ? _ref1[0] : void 0) || ((_ref2 = hud.units[name]) != null ? _ref2[0] : void 0);
+      }));
+      return cmd;
     };
 
-    Cmd.andSay = function(msg, a, b, c, d) {
-      var _this = this;
-      return function(unit) {
+    Cmd.prototype.say = function(msg, a, b, c, d) {
+      this.verbs.push(function(unit) {
         return unit.say(msg, a, b, c, d);
-      };
+      });
+      return this;
     };
 
-    Cmd.follow = function(fn, param) {
-      if (fn) {
-        return (fn.call(this))(param);
-      } else {
-        return param;
+    Cmd.prototype.execute = function(hud) {
+      var s, v, _i, _len, _ref1, _results;
+      s = this.subject(hud);
+      _ref1 = this.verbs;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        v = _ref1[_i];
+        _results.push(v(s));
       }
+      return _results;
     };
 
     return Cmd;
@@ -165,11 +174,12 @@
 
     SimRun.name = 'SimRun';
 
-    function SimRun(smarts) {
+    function SimRun(gameData, smarts) {
+      this.gameData = gameData != null ? gameData : SCSim.data;
       this.smarts = smarts;
       this.emitter = new SCSim.EventEmitter;
       this.hud = new SCSim.Hud(this.emitter);
-      this.sim = new SCSim.Simulation(this.emitter);
+      this.sim = new SCSim.Simulation(this.emitter, this.gameData);
     }
 
     SimRun.prototype.update = function() {
@@ -190,10 +200,10 @@
 
     Simulation.name = 'Simulation';
 
-    function Simulation(emitter) {
-      this.gameData = SCSim.data;
-      this.subActors = {};
+    function Simulation(emitter, gameData) {
       this.emitter = emitter;
+      this.gameData = gameData;
+      this.subActors = {};
       this.time = new SCSim.SimTime;
       this.beingBuilt = [];
       Simulation.__super__.constructor.call(this);
