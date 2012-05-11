@@ -65,4 +65,25 @@
     });
   });
 
+  describe("SCSim.Cmd", function() {
+    return describe("select()", function() {
+      var hud, sim;
+      hud = null;
+      sim = null;
+      beforeEach(function() {
+        var simRun;
+        simRun = new SCSim.SimRun;
+        sim = simRun.sim;
+        return hud = simRun.hud;
+      });
+      return it("should return a fn to select the specified actor from a HUD", function() {
+        var cmd, unit;
+        unit = sim.makeActor("probe");
+        hud.addUnit(unit);
+        cmd = SCSim.Cmd.selectUnit("probe");
+        return unit.should.equal(cmd(hud));
+      });
+    });
+  });
+
 }).call(this);

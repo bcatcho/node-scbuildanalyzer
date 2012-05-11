@@ -33,3 +33,24 @@ describe "SCSim.GameRules", ->
       hud = { minerals: 100, gas: 100 , supply:0, supplyCap: 0}
       result = rules.canTrainUnit "testUnit", hud
       result.should.be.false
+
+
+describe "SCSim.Cmd", ->
+  describe "select()", ->
+    hud = null
+    sim = null
+    beforeEach ->
+      simRun = new SCSim.SimRun
+      sim = simRun.sim
+      hud = simRun.hud
+
+    it "should return a fn to select the specified actor from a HUD", ->
+      unit = sim.makeActor "probe"
+      hud.addUnit unit
+
+      cmd = SCSim.Cmd.selectUnit "probe"
+
+      unit.should.equal cmd(hud)
+
+
+

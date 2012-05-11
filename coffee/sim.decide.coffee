@@ -19,6 +19,10 @@ class SCSim.Hud
     @emitter = emitter
     @setupEvents()
 
+  addUnit: (unit) ->
+    @units[unit.actorName] = [] if not @units[unit.actorName]
+    @units[unit.actorName].push unit
+
   addEvent: (eventName, filter, callBack) ->
     @emitter.observe eventName, (eventObj) -> callBack(filter(eventObj))
 
@@ -66,26 +70,32 @@ class SCSim.GameRules
   meetsCriteria: (data, hud, criteria...) ->
     criteria.reduce ((acc, c) -> acc and c(data, hud)), true
 
-class TESTCMD
-  @select: (name, c) ->
-    (x) => (c.call @) x[name]
-  @andSay: (msg) ->
-    (unit) => unit.say msg
 
-# eg: (TESTCMD.select "probe", -> @andSay msg)(HUD)
 
 # An abstraction to represent how a player would normally control the game
-class SCSim.Cmd
-  selectUnit: (name, cont) ->
-    (hud) -> hud.units[name]
+class SCSim.Cmd # this seems ridiculous
+  @selectUnit: (name, cont) ->
+    (hud) =>
+      @follow cont, hud.units[name][0] # FIXME this is bad
+
+  @andSay: (msg, a, b, c, d) ->
+    (unit) => unit.say msg, a, b, c, d
+
+  @follow: (fn, param) ->
+    if fn
+      (fn.call @) param
+    else
+      param
+
 
 # takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
   constructor: ->
   
   decideNextCommand: (hud) ->
-    
+    # input state, output commands
 
+    
 class SCSim.SimRun
   # FIXME make him load the SCSim.data
   constructor: (smarts) ->
