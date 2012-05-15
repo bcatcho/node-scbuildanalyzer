@@ -98,7 +98,7 @@
     };
 
     GameRules.prototype.hasEnoughSupply = function(data, hud) {
-      return data.supply <= hud.supply + hud.supplyCap;
+      return data.supply <= hud.supplyCap - hud.supply;
     };
 
     GameRules.prototype.hasTechPath = function(data, hud) {
@@ -127,12 +127,10 @@
     }
 
     Cmd.selectA = function(name) {
-      var cmd;
-      cmd = new this((function(hud) {
+      return new this(function(hud) {
         var _ref1, _ref2;
         return ((_ref1 = hud.structures[name]) != null ? _ref1[0] : void 0) || ((_ref2 = hud.units[name]) != null ? _ref2[0] : void 0);
-      }));
-      return cmd;
+      });
     };
 
     Cmd.prototype.say = function(msg, a, b, c, d) {
@@ -162,9 +160,30 @@
 
     Smarts.name = 'Smarts';
 
-    function Smarts() {}
+    function Smarts(gameData) {
+      this.build = [];
+      this.rules = new SCSim.GameRules(gameData);
+    }
 
-    Smarts.prototype.decideNextCommand = function(hud) {};
+    Smarts.prototype.decideNextCommand = function(hud, time) {
+      if (this.build[0].seconds <= time.sec && this.build[0].iterator(hud, this.rules)) {
+        return this.build.pop(0).cmd;
+      }
+      return false;
+    };
+
+    Smarts.prototype.addToBuild = function(seconds, iterator, cmd) {
+      var buildStep, index;
+      buildStep = {
+        seconds: seconds,
+        iterator: iterator,
+        cmd: cmd
+      };
+      index = _(this.build).sortedIndex(buildStep, function(bStep) {
+        return bStep.seconds;
+      });
+      return this.build.splice(index, 0, buildStep);
+    };
 
     return Smarts;
 

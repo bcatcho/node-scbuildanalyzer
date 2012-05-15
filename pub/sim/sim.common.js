@@ -51,10 +51,13 @@
 
     SimTime.name = 'SimTime';
 
-    function SimTime() {
-      this.tick = 0;
-      this.sec = 0;
+    function SimTime(seconds) {
+      if (seconds == null) {
+        seconds = 0;
+      }
       this.secPerTick = SCSim.config.secsPerTick;
+      this.tick = parseInt(seconds / this.secPerTick);
+      this.sec = seconds;
     }
 
     SimTime.prototype.step = function(steps) {

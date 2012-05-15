@@ -105,8 +105,7 @@
     });
     describe("select()", function() {
       var hud, sim;
-      hud = null;
-      sim = null;
+      hud = sim = null;
       beforeEach(function() {
         var simRun;
         simRun = new SCSim.SimRun(gameData);
@@ -123,8 +122,7 @@
     });
     return describe("say()", function() {
       var hud, sim;
-      hud = null;
-      sim = null;
+      hud = sim = null;
       beforeEach(function() {
         var simRun;
         simRun = new SCSim.SimRun(gameData);
@@ -146,6 +144,93 @@
         cmd = SCSim.Cmd.selectA("testUnit").say("prop100").say("propTimes2");
         cmd.execute(hud);
         return unit.get("prop").should.equal(200);
+      });
+    });
+  });
+
+  describe("SCSim.Smarts", function() {
+    describe("addToBuild()", function() {
+      var smarts;
+      smarts = new SCSim.Smarts;
+      it("adds first build step at index 0", function() {
+        smarts.addToBuild(10, function() {
+          return "first";
+        });
+        return smarts.build[0].iterator().should.equal("first");
+      });
+      it("adds a later build step after the first", function() {
+        smarts.addToBuild(20, function() {
+          return "second";
+        });
+        return smarts.build[1].iterator().should.equal("second");
+      });
+      it("inserts another build step in sorted order", function() {
+        smarts.addToBuild(15, function() {
+          return "third";
+        });
+        return smarts.build[1].iterator().should.equal("third");
+      });
+      return it("adds a duplicate before it's corresponding match", function() {
+        smarts.addToBuild(10, function() {
+          return "fourth";
+        });
+        return smarts.build[0].iterator().should.equal("fourth");
+      });
+    });
+    return describe("decideNextCommand()", function() {
+      var buyMinOnly, canBuyMinOnly, gameData, hud, smarts;
+      gameData = new SCSim.GameData;
+      gameData.addUnit("minOnly", 10, 0, 10, 1);
+      gameData.addUnit("gasOnly", 0, 10, 10, 1);
+      gameData.addUnit("minAndGas", 10, 10, 10, 1);
+      smarts = new SCSim.Smarts(gameData);
+      hud = new SCSim.Hud(new SCSim.EventEmitter);
+      buyMinOnly = function() {
+        return "buyMinOnly";
+      };
+      canBuyMinOnly = function(hud, rules) {
+        return rules.canTrainUnit("minOnly", hud);
+      };
+      beforeEach(function() {
+        var _ref;
+        _ref = [0, 0], hud.minerals = _ref[0], hud.gas = _ref[1];
+        return smarts = new SCSim.Smarts(gameData);
+      });
+      it("will buy a unit it can afford and has enough supply for", function() {
+        var cmd, time;
+        smarts.addToBuild(0, canBuyMinOnly, buyMinOnly);
+        hud.minerals = 10;
+        hud.supply = 9;
+        time = new SCSim.SimTime;
+        cmd = smarts.decideNextCommand(hud, time);
+        return cmd.should.equal(buyMinOnly);
+      });
+      it("will not buy something it can't afford", function() {
+        var cmd, time;
+        smarts.addToBuild(0, canBuyMinOnly, buyMinOnly);
+        hud.minerals = 9;
+        hud.supply = 9;
+        time = new SCSim.SimTime;
+        cmd = smarts.decideNextCommand(hud, time);
+        return cmd.should.be["false"];
+      });
+      it("will buy what it can afford at a specified time", function() {
+        var cmd, time;
+        smarts.addToBuild(20, canBuyMinOnly, buyMinOnly);
+        hud.minerals = 10;
+        hud.supply = 9;
+        time = new SCSim.SimTime(20);
+        cmd = smarts.decideNextCommand(hud, time);
+        return cmd.should.equal(buyMinOnly);
+      });
+      return it("won't buy what it can afford _before_ the specified time", function() {
+        var cmd, time;
+        smarts.addToBuild(20, canBuyMinOnly, buyMinOnly);
+        hud.minerals = 10;
+        hud.supply = 9;
+        time = new SCSim.SimTime(19);
+        cmd = smarts.decideNextCommand(hud, time);
+        return cmd.should.be["false"];
       });
     });
   });
