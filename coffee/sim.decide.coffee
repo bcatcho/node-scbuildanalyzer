@@ -62,7 +62,7 @@ class SCSim.GameRules
     (hud.gas >= data.gas and hud.minerals >= data.min)
 
   hasEnoughSupply: (data, hud) ->
-    (data.supply <= hud.supply + hud.supplyCap)
+    (data.supply <= hud.supplyCap - hud.supply)
 
   hasTechPath: (data, hud) ->
     true
@@ -71,42 +71,47 @@ class SCSim.GameRules
     criteria.reduce ((acc, c) -> acc and c(data, hud)), true
 
 
-
 # An abstraction to represent how a player would normally control the game
 class SCSim.Cmd
   constructor: (@subject, @verbs = [])->
 
   @selectA: (name) ->
-    cmd = new @ ((hud) -> hud.structures[name]?[0] || hud.units[name]?[0])
-    cmd
+    new @ (hud) ->
+      hud.structures[name]?[0] || hud.units[name]?[0]
 
   say: (msg, a, b, c, d) ->
-    @verbs.push (unit) ->
-      unit.say msg, a, b, c, d
+    @verbs.push (unit) -> unit.say msg, a, b, c, d
     return @
 
   execute: (hud) ->
     s = @subject(hud)
-    for v in @verbs
-      v(s)
+    v(s) for v in @verbs
 
 
 # takes a build order and a HUD and makes decisions in the form of commands
+# This will be the interface by which the user can control the simulation
 class SCSim.Smarts
-  constructor: ->
+  constructor: (gameData) ->
+    @build = []
+    @rules = new SCSim.GameRules gameData
 
-  decideNextCommand: (hud) ->
-    # input state, output commands
+  decideNextCommand: (hud, time) ->
+    if @build[0].seconds <= time.sec and @build[0].iterator(hud, @rules)
+      return @build.pop(0).cmd
+    false
+
+  addToBuild: (seconds, iterator, cmd) ->
+    buildStep = { seconds, iterator, cmd }
+    index = _(@build).sortedIndex buildStep, (bStep) -> bStep.seconds
+    @build.splice index, 0, buildStep
 
 
 class SCSim.SimRun
-  # FIXME make him load the SCSim.data
   constructor: (gameData, smarts) ->
     @gameData = gameData ? SCSim.data
     @smarts = smarts
     @emitter = new SCSim.EventEmitter
     @hud = new SCSim.Hud @emitter
-    # what about configs?
     @sim = new SCSim.Simulation @emitter, @gameData
 
   update: ->

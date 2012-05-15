@@ -92,3 +92,20 @@ For example
 ## Optimisations
 
 - Event logs. Instead of searching to see if an event needs to be logged, maybe attach a method to the event itself that does the logging.
+
+## Scratch
+
+What will the rules for the "Smarts" look like?
+Normally a player builds things based on:
+   - a specific time
+   - a spectif food
+   - when something else is done
+
+There will be competing priorities between:
+   - making probes and the next thing of your build
+   - making supply and probes and the next thing
+
+Some things will often be automatic but at times you wish to change the timing of one or two
+   - probes
+   - supply
+     - this may require a cool predictive measure to determine when to build supply so as to not get blocked if you have 10 gates.

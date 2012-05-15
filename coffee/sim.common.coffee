@@ -21,10 +21,10 @@ class SCSim.EventEmitter
 
 
 class SCSim.SimTime
-  constructor: ->
-    @tick = 0
-    @sec = 0
+  constructor: (seconds = 0) ->
     @secPerTick = SCSim.config.secsPerTick
+    @tick = parseInt(seconds / @secPerTick)
+    @sec = seconds
 
   step: (steps = 1) ->
     @tick += steps
