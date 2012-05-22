@@ -36,6 +36,9 @@ class SCSim.GameData
   get: (name) ->
     return @units[name] || @structures[name] || @neutrals[name]
 
+  isStructure: (name) ->
+    return @structures[name] isnt null
+
 # behavior helper
 behave = (name, args...) ->
   name: name
@@ -47,7 +50,7 @@ units = [
 
 structures = [
   ["pylon", 100, 0, 25, behave("Trainable"), behave("SupplyStructure", 10)]
-  ["nexus", 400, 0, 100, behave("PrimaryStructure"), behave("Trainer")]
+  ["nexus", 400, 0, 100, behave("PrimaryStructure"), behave("Trainable"), behave("Trainer")]
 ]
 
 neutrals = [

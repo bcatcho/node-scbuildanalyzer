@@ -4,6 +4,7 @@ SCSim = root.SCSim
 _ = root._ #require underscore
 chai = root.chai
 should = chai.should()
+expect = chai.expect
 
 
 describe "SCSim.GameRules", ->
@@ -96,7 +97,6 @@ describe "SCSim.Cmd", ->
 
 
 describe "SCSim.Smarts", ->
-  
   describe "addToBuild()", ->
     smarts = new SCSim.Smarts
 
@@ -115,7 +115,6 @@ describe "SCSim.Smarts", ->
     it "adds a duplicate before it's corresponding match", ->
       smarts.addToBuild 10, () -> "fourth"
       smarts.build[0].iterator().should.equal "fourth"
-
 
   describe "decideNextCommand()", ->
     gameData = new SCSim.GameData
@@ -150,7 +149,7 @@ describe "SCSim.Smarts", ->
       time = new SCSim.SimTime
 
       cmd = smarts.decideNextCommand hud, time
-      cmd.should.be.false
+      expect(cmd).to.be.null
 
     it "will buy what it can afford at a specified time", ->
       smarts.addToBuild 20, canBuyMinOnly, buyMinOnly
@@ -168,4 +167,4 @@ describe "SCSim.Smarts", ->
       time = new SCSim.SimTime 19
 
       cmd = smarts.decideNextCommand hud, time
-      cmd.should.be.false
+      expect(cmd).to.be.null

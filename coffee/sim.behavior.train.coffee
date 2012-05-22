@@ -22,6 +22,9 @@ class SCSim.Trainable extends SCSim.Behavior
       @startTime = @time.sec
 
     messages:
+      trainInstantly: () ->
+        @say "complete"
+
       addCallback: (fn) ->
         @callbacks.push(fn)
 
@@ -32,7 +35,7 @@ class SCSim.Trainable extends SCSim.Behavior
 
   @state "trained"
     enterState: ->
-      @say "trainingComplete"
+      @say "trainingComplete", @actor
 
 
 class SCSim.Trainer extends SCSim.Behavior

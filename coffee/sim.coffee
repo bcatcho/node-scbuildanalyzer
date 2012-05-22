@@ -3,36 +3,31 @@ root = exports ? this
 SCSim = root.SCSim
 
 
-runSim = (harvesterCount, simLength = 600) ->
+runSim = (harvesterCount, simLength = 600, smarts) ->
   # helper methods
   simTickLength = simLength / SCSim.config.secsPerTick
   tickToDate = (t) -> new Date(t * 1000)
-  
+
   # a bucket to collect data
   logs =
     mineralsCollected: []
 
-  simRun = new SCSim.SimRun
+  simRun = new SCSim.SimRun SCSim.data, smarts
   sim = simRun.sim
   simRun.emitter.observe 'depositMinerals',
      (e) => logs.mineralsCollected.push [e.time.sec, e.args[0]/(e.time.sec/60)]
-     
+
   # run the simulation
-  #console.profile()
-  base = sim.makeActor "nexus"
   simRun.start()
-  base.say("trainUnit", 'probe') for i in [1..harvesterCount]
   simRun.update() for i in [1..simTickLength]
-  #console.profileEnd()
 
   # testing grounds
   console.log sim.makeActor("pylon")
 
-
   # process the logs
   results =
-     data: []
-     markings: []
+    data: []
+    markings: []
 
   # TODO make config setting, this just happens to look cool
   dataChunkTime = (25)
@@ -49,8 +44,14 @@ runSim = (harvesterCount, simLength = 600) ->
   return results
 
 
+makeSmarts = (harvesterCount) ->
+  smarts = new SCSim.Smarts
+  helper = new SCSim.BuildHelper
+  helper.trainProbesConstantly smarts, harvesterCount
+  smarts
+
 addSeries = (series, options, harvesterCount) ->
-  results = runSim harvesterCount, 600
+  results = runSim harvesterCount, 600, makeSmarts(harvesterCount)
   series.push
     data: results.data
     shadowSize: 0

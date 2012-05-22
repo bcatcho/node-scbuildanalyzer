@@ -31,12 +31,21 @@ class SCSim.Hud
       (e) -> e.args[0],
       (minAmt) => @minerals += minAmt
 
+    @addEvent "trainingComplete",
+      (e) -> e.args[0],
+      (actor) =>
+        # FIXME this is a terrible way to detect new buildings
+        if SCSim.data.isStructure actor.actorName
+          @structures[actor.actorName] ?= []
+          @structures[actor.actorName].push actor
+
     @addEvent "trainUnitComplete",
       (e) -> e.args[0],
       (unit) =>
         u = SCSim.data.units[unit.actorName]
         @supply += u.supply
-        @units[unit.actorName] = unit
+        @units[unit.actorName] ?= []
+        @units[unit.actorName].push unit
 
     @addEvent "supplyCapIncreased",
       (e) -> e.args[0],
@@ -88,17 +97,19 @@ class SCSim.Cmd
     v(s) for v in @verbs
 
 
-# takes a build order and a HUD and makes decisions in the form of commands
 # This will be the interface by which the user can control the simulation
+# it takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
   constructor: (gameData) ->
     @build = []
     @rules = new SCSim.GameRules gameData
 
   decideNextCommand: (hud, time) ->
-    if @build[0].seconds <= time.sec and @build[0].iterator(hud, @rules)
+    if (@build.length == 0)
+      return null
+    if (@build[0].seconds <= time.sec and @build[0].iterator(hud, @rules))
       return @build.pop(0).cmd
-    false
+    null
 
   addToBuild: (seconds, iterator, cmd) ->
     buildStep = { seconds, iterator, cmd }
@@ -109,13 +120,17 @@ class SCSim.Smarts
 class SCSim.SimRun
   constructor: (gameData, smarts) ->
     @gameData = gameData ? SCSim.data
-    @smarts = smarts
+    @smarts = smarts ? new SCSim.Smarts
     @emitter = new SCSim.EventEmitter
     @hud = new SCSim.Hud @emitter
     @sim = new SCSim.Simulation @emitter, @gameData
 
   update: ->
-    #commands = @smarts.decide @hud
+    # pass the current gamestate (HUD) to the smarts
+    command = @smarts.decideNextCommand @hud, @sim.time
+    # execute whatever the smarts decides
+    command?.execute(@hud)
+    # advance one tick
     @sim.update()
 
   start: ->
@@ -153,6 +168,9 @@ class SCSim.Simulation extends SCSim.Behavior
     update: -> (t) ->
       @time.step(1)
       @subActors[actr].update(@time.sec) for actr of @subActors
+
+    enterState: ->
+      SCSim.helpers.setupMap @
 
     messages:
       buildStructure: (name) ->

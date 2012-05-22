@@ -14,18 +14,8 @@ SCSim.config.secsPerTick = .5 # to speed up tests
 describe 'Simulation with one base one worker', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
-  base = null
-
-  describe 'When told to create a new Simulation::Base', ->
-    base = sim.makeActor "nexus"
-
-  describe 'When told to start', ->
-    it 'should change state to running', ->
-      simRun.start()
-      sim.stateName.should.equal 'running'
-
-    it 'should be at tick count = 0', ->
-      sim.time.tick.should.equal 0
+  simRun.start()
+  base = simRun.hud.structures.nexus[0]
 
   describe 'When the base creates a new worker', ->
     base.say "trainUnit", 'probe'
@@ -38,8 +28,8 @@ describe 'Simulation with one base one worker', ->
 describe 'Simulation with one base and two workers', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
-  base = sim.makeActor "nexus"
   simRun.start()
+  base = simRun.hud.structures.nexus[0]
 
   it 'should queue up two workers at base', ->
     base.say "trainUnit", 'probe'
