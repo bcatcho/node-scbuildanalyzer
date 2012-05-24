@@ -1,17 +1,41 @@
 root = exports ? this
 
 SCSim = root.SCSim ? {}; root.SCSim = SCSim
+SCSim.Enums ?= {}; SCe = SCSim.Enums # convenience enum lookup
+
 _ = root._ #require underscore
 
 
-#SCSim.Enum =
-#  command: ["train", "research", "warpIn"]
-#  subject: ["structure", "unit", "upgrade"]
+enumFromList = (list...) ->
+  obj = {}
+  obj[str] = str for str in list
+  obj
+
+SCe.Msg = enumFromList "DepositMinerals", "TrainingComplete"
+
+
+# Tracks game state by observing and evaluating sim events with GameRules
+class SCSim.GameState
+  constructor: (emitter, rules) ->
+    @resources = minerals : 0, gas: 0
+    @supply = inUse: 0, cap: 0
+    @units = {}
+    @structures = {}
+    @observeEvents emitter, rules
+
+  observeEvents: (emitter, rules) ->
+    # convenience method
+    obs = (eventName, filter, callBack) ->
+      emitter.observe eventName, (eventObj) ->
+        callBack filter(eventObj)
+
+    obs SCe.Msg.DepositMinerals,
+      (e) -> e.args[0],
+      (minAmt) => rules.applyCollectResources @, minAmt, 0
 
 
 class SCSim.GameRules
-  constructor: (gameData) ->
-    @gameData = gameData
+  constructor: (@gameData) ->
 
   canTrainUnit: (unitName, hud) ->
     data = @gameData.get unitName
@@ -29,34 +53,39 @@ class SCSim.GameRules
   meetsCriteria: (data, hud, criteria...) ->
     criteria.reduce ((acc, c) -> acc and c(data, hud)), true
 
+  applyCollectResources: (gameState, minerals, gas) ->
+    gameState.resources.minerals += minerals
+    gameState.resources.gas += gas
+
 
 # Acts out the Cmd's that are emitted from the build order
 # It serves as a proxy between the Sim and a User
 class SCSim.GameCmdInterpreter
   constructor: (@hud, @rules) ->
-    false
 
   execute: (cmd, hud, rules) ->
     false
 
+  canExecute: (cmd, hud, rules) ->
+
+
 
 class SCSim.GameCmd
-  constructor: (subjectName, subjectType) ->
-    @subjectName = subjectName
-    @subjectType = subjectType
+  constructor: (subject) ->
+    @article = "any"
+    @subject = subject
     @verb
-    @predicateName
-    @predicateType
+    @verbObject
 
-  @select: (subjectType, subjectName) ->
-    new @ subjectType, subjectName
+    # fluent interface conjunctions
+    @and = @
 
-  train: (predType, predName) ->
-    [@verb, @predicateType, @predicateName] = ["train", predType, predName]
+  @select: (subject) ->
+    new @ subject
+
+  train: (name) ->
+    [@verb, @verbObject] = ["train", name]
     return @
-
-  # fluent interface conjunctions
-  and: -> @
 
 
 # An abstraction to represent how a player would normally control the game

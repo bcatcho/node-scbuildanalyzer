@@ -19,6 +19,8 @@ class SCSim.EventEmitter
     if @events[eventName] isnt undefined
       callBack(eventObj) for callBack in @events[eventName]
 
+  makeAndFire: (name, time, simId, args...) ->
+    @fire name, {name, time, simId, args}
 
 class SCSim.SimTime
   constructor: (seconds = 0) ->
