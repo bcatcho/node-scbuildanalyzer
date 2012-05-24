@@ -16,59 +16,6 @@
 
   expect = chai.expect;
 
-  describe("SCSim.GameRules", function() {
-    var rules;
-    rules = null;
-    beforeEach(function() {
-      var gameData;
-      gameData = new SCSim.GameData;
-      gameData.addUnit("testUnit", 10, 20, 1, 1);
-      return rules = new SCSim.GameRules(gameData);
-    });
-    return describe("canTrainUnit()", function() {
-      it("should be true if enough supply, gas, min, and tech", function() {
-        var hud, result;
-        hud = {
-          minerals: 10,
-          gas: 20,
-          supply: 0,
-          supplyCap: 100
-        };
-        result = rules.canTrainUnit("testUnit", hud);
-        return result.should.be["true"];
-      });
-      it("should be false if unit min&gas cost more than our bank", function() {
-        var hud, result;
-        hud = {
-          minerals: 9,
-          gas: 19
-        };
-        result = rules.canTrainUnit("testUnit", hud);
-        return result.should.be["false"];
-      });
-      it("should be false if only unit min cost more than our bank", function() {
-        var hud, result;
-        hud = {
-          minerals: 9,
-          gas: 100
-        };
-        result = rules.canTrainUnit("testUnit", hud);
-        return result.should.be["false"];
-      });
-      return it("should be false if unit would excede supply cap", function() {
-        var hud, result;
-        hud = {
-          minerals: 100,
-          gas: 100,
-          supply: 0,
-          supplyCap: 0
-        };
-        result = rules.canTrainUnit("testUnit", hud);
-        return result.should.be["false"];
-      });
-    });
-  });
-
   SCSim.TestCmdBehavior = (function(_super) {
 
     __extends(TestCmdBehavior, _super);

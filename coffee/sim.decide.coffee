@@ -10,12 +10,8 @@ class SCSim.Hud
     @gas = 0
     @supply = 0
     @supplyCap = 10
-    @production = {}
-    @alerts = [] # crono ready, etc
-    @economy = {} # state of crono
     @units = {} # my units (Maybe?)
     @structures = {} # my buildings (Maybe ?)
-    @events = {}
     @emitter = emitter
     @setupEvents()
 
@@ -34,7 +30,7 @@ class SCSim.Hud
     @addEvent "trainingComplete",
       (e) -> e.args[0],
       (actor) =>
-        # FIXME this is a terrible way to detect new buildings
+        # FIXME this is a terrible way to detect new buildings maybe
         if SCSim.data.isStructure actor.actorName
           @structures[actor.actorName] ?= []
           @structures[actor.actorName].push actor
@@ -57,44 +53,6 @@ class SCSim.Hud
         u = SCSim.data[unitName]
         @minerals -= u.min
         @gas -= u.gas
-
-
-class SCSim.GameRules
-  constructor: (gameData) ->
-    @gameData = gameData
-
-  canTrainUnit: (unitName, hud) ->
-    data = @gameData.get unitName
-    @meetsCriteria data, hud, @canAfford, @hasEnoughSupply, @hasTechPath
-
-  canAfford: (data, hud) ->
-    (hud.gas >= data.gas and hud.minerals >= data.min)
-
-  hasEnoughSupply: (data, hud) ->
-    (data.supply <= hud.supplyCap - hud.supply)
-
-  hasTechPath: (data, hud) ->
-    true
-
-  meetsCriteria: (data, hud, criteria...) ->
-    criteria.reduce ((acc, c) -> acc and c(data, hud)), true
-
-
-# An abstraction to represent how a player would normally control the game
-class SCSim.Cmd
-  constructor: (@subject, @verbs = [])->
-
-  @selectA: (name) ->
-    new @ (hud) ->
-      hud.structures[name]?[0] || hud.units[name]?[0]
-
-  say: (msg, a, b, c, d) ->
-    @verbs.push (unit) -> unit.say msg, a, b, c, d
-    return @
-
-  execute: (hud) ->
-    s = @subject(hud)
-    v(s) for v in @verbs
 
 
 # This will be the interface by which the user can control the simulation
