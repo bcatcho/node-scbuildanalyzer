@@ -98,7 +98,7 @@ describe "SCSim.Smarts", ->
     buyMinOnly = () -> "buyMinOnly"
 
     canBuyMinOnly = (hud, rules) ->
-      rules.canTrainUnit "minOnly", hud
+      rules.canTrainUnit hud, "minOnly"
 
     beforeEach ->
       [hud.minerals, hud.gas] = [0, 0]

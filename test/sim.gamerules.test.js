@@ -22,7 +22,7 @@
     beforeEach(function() {
       var emitter, gameData;
       gameData = new SCSim.GameData;
-      gameData.addUnit("testUnit", 10, 20, 1, 1);
+      gameData.addUnit("testUnit", 10, 10, 1, 1);
       rules = new SCSim.GameRules(gameData);
       emitter = new SCSim.EventEmitter;
       return gState = new SCSim.GameState(emitter, rules);
@@ -36,7 +36,7 @@
           supply: 0,
           supplyCap: 100
         };
-        result = rules.canTrainUnit("testUnit", hud);
+        result = rules.canTrainUnit(hud, "testUnit");
         return result.should.be["true"];
       });
       it("should be false if unit min&gas cost more than our bank", function() {
@@ -45,7 +45,7 @@
           minerals: 9,
           gas: 19
         };
-        result = rules.canTrainUnit("testUnit", hud);
+        result = rules.canTrainUnit(hud, "testUnit");
         return result.should.be["false"];
       });
       it("should be false if only unit min cost more than our bank", function() {
@@ -54,7 +54,7 @@
           minerals: 9,
           gas: 100
         };
-        result = rules.canTrainUnit("testUnit", hud);
+        result = rules.canTrainUnit(hud, "testUnit");
         return result.should.be["false"];
       });
       return it("should be false if unit would excede supply cap", function() {
@@ -65,12 +65,12 @@
           supply: 0,
           supplyCap: 0
         };
-        result = rules.canTrainUnit("testUnit", hud);
+        result = rules.canTrainUnit(hud, "testUnit");
         return result.should.be["false"];
       });
     });
-    return describe("applyCollectResources()", function() {
-      return it("should increase GameState's minerals and gas", function() {
+    describe("applyCollectResources()", function() {
+      return it("should increase minerals and gas", function() {
         gState.resources.minerals = 0;
         gState.resources.gas = 0;
         rules.applyCollectResources(gState, 5, 7);
@@ -78,19 +78,26 @@
         return gState.resources.gas.should.equal(7);
       });
     });
+    return describe("applyTrainUnit()", function() {
+      return it("should affect min, gas and supply", function() {
+        gState.resources.minerals = 10;
+        gState.resources.gas = 10;
+        gState.supply.inUse = 0;
+        gState.supply.cap = 10;
+        rules.applyTrainUnit(gState, "testUnit");
+        gState.resources.minerals.should.equal(0);
+        gState.resources.gas.should.equal(0);
+        return gState.supply.inUse.should.equal(1);
+      });
+    });
   });
 
   describe("SCSim.GameCmd", function() {
     describe("fluent interface", function() {
-      it("should make a new GameCmd that selects a probe unit", function() {
+      return it("should make a new GameCmd that selects a probe unit", function() {
         var cmd;
-        cmd = SCSim.GameCmd.select("unit", "probe");
-        return cmd.should.be.an["instanceof"](SCSim.GameCmd);
-      });
-      return it("should make a new GameCmd that selects a nexus structure", function() {
-        var cmd;
-        cmd = SCSim.GameCmd.select("structure", "nexus");
-        return cmd.should.be.an["instanceof"](SCSim.GameCmd);
+        cmd = SCSim.GameCmd.select("probe");
+        return cmd.subject.should.equal("probe");
       });
     });
     return describe("train", function() {
@@ -118,6 +125,40 @@
     });
   });
 
-  describe("SCSim.GameCmdInterpreter", function() {});
+  describe("SCSim.GameCmdInterpreter", function() {
+    var emitter, gState, interp, rules;
+    interp = rules = gState = emitter = null;
+    beforeEach(function() {
+      var gameData;
+      gameData = new SCSim.GameData;
+      gameData.addUnit("testUnit", 10, 10, 1, 1);
+      rules = new SCSim.GameRules(gameData);
+      emitter = new SCSim.EventEmitter;
+      gState = new SCSim.GameState(emitter, rules);
+      return interp = new SCSim.GameCmdInterpreter;
+    });
+    return describe("canApplyRule", function() {
+      it("returns true when enough resources & supply to train", function() {
+        var cmd, result;
+        gState.resources.minerals = 10;
+        gState.resources.gas = 10;
+        gState.supply.inUse = 0;
+        gState.supply.cap = 10;
+        cmd = SCSim.GameCmd.select("nexus").and.train("testUnit");
+        result = interp.canExecute(gState, rules, cmd);
+        return result.should.be["true"];
+      });
+      return it("returns false when there isnt enough minerals to train", function() {
+        var cmd, result;
+        gState.resources.minerals = 0;
+        gState.resources.gas = 10;
+        gState.supply.inUse = 0;
+        gState.supply.cap = 10;
+        cmd = SCSim.GameCmd.select("nexus").and.train("testUnit");
+        result = interp.canExecute(gState, rules, cmd);
+        return result.should.be["false"];
+      });
+    });
+  });
 
 }).call(this);

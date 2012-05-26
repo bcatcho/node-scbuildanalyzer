@@ -37,9 +37,9 @@ class SCSim.GameState
 class SCSim.GameRules
   constructor: (@gameData) ->
 
-  canTrainUnit: (unitName, hud) ->
-    data = @gameData.get unitName
-    @meetsCriteria data, hud, @canAfford, @hasEnoughSupply, @hasTechPath
+  canTrainUnit: (gameState, unitName) ->
+    unit = @gameData.get unitName
+    @meetsCriteria unit, gameState, @canAfford, @hasEnoughSupply, @hasTechPath
 
   canAfford: (data, hud) ->
     (hud.gas >= data.gas and hud.minerals >= data.min)
@@ -57,17 +57,46 @@ class SCSim.GameRules
     gameState.resources.minerals += minerals
     gameState.resources.gas += gas
 
+  applyTrainUnit: (gameState, unitName) ->
+    unit = @gameData.get unitName
+    gameState.resources.minerals -= unit.min
+    gameState.resources.gas -= unit.gas
+    gameState.supply.inUse += unit.supply
+
 
 # Acts out the Cmd's that are emitted from the build order
 # It serves as a proxy between the Sim and a User
 class SCSim.GameCmdInterpreter
   constructor: (@hud, @rules) ->
+    @testState = 
+      resources:
+        minerals : 0
+        gas: 0
+      supply:
+        inUse: 0
+        cap: 0
+
+    @verbToRule =
+      train: "applyTrainUnit"
 
   execute: (cmd, hud, rules) ->
     false
 
-  canExecute: (cmd, hud, rules) ->
+  canExecute: (gameState, rules, cmd) ->
+    @testState.resources.minerals = gameState.resources.minerals
+    @testState.resources.gas = gameState.resources.gas
+    @testState.supply.inUse = gameState.supply.inUse
+    @testState.supply.cap = gameState.supply.cap
 
+    @applyRuleForAction @testState, rules, cmd.verb, cmd.verbObject
+
+    return false if (@testState.resources.minerals < 0)
+    return false if (@testState.resources.gas < 0)
+    return false if (@testState.supply.inUse > @testState.supply.cap)
+    return true
+
+  applyRuleForAction: (gameState, rules, verb, verbObject) ->
+    rules[@verbToRule[verb]] gameState, verbObject
 
 
 class SCSim.GameCmd

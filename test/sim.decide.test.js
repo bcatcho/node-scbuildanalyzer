@@ -136,7 +136,7 @@
         return "buyMinOnly";
       };
       canBuyMinOnly = function(hud, rules) {
-        return rules.canTrainUnit("minOnly", hud);
+        return rules.canTrainUnit(hud, "minOnly");
       };
       beforeEach(function() {
         var _ref;

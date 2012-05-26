@@ -71,10 +71,10 @@
       this.gameData = gameData;
     }
 
-    GameRules.prototype.canTrainUnit = function(unitName, hud) {
-      var data;
-      data = this.gameData.get(unitName);
-      return this.meetsCriteria(data, hud, this.canAfford, this.hasEnoughSupply, this.hasTechPath);
+    GameRules.prototype.canTrainUnit = function(gameState, unitName) {
+      var unit;
+      unit = this.gameData.get(unitName);
+      return this.meetsCriteria(unit, gameState, this.canAfford, this.hasEnoughSupply, this.hasTechPath);
     };
 
     GameRules.prototype.canAfford = function(data, hud) {
@@ -102,6 +102,14 @@
       return gameState.resources.gas += gas;
     };
 
+    GameRules.prototype.applyTrainUnit = function(gameState, unitName) {
+      var unit;
+      unit = this.gameData.get(unitName);
+      gameState.resources.minerals -= unit.min;
+      gameState.resources.gas -= unit.gas;
+      return gameState.supply.inUse += unit.supply;
+    };
+
     return GameRules;
 
   })();
@@ -111,13 +119,46 @@
     function GameCmdInterpreter(hud, rules) {
       this.hud = hud;
       this.rules = rules;
+      this.testState = {
+        resources: {
+          minerals: 0,
+          gas: 0
+        },
+        supply: {
+          inUse: 0,
+          cap: 0
+        }
+      };
+      this.verbToRule = {
+        train: "applyTrainUnit"
+      };
     }
 
     GameCmdInterpreter.prototype.execute = function(cmd, hud, rules) {
       return false;
     };
 
-    GameCmdInterpreter.prototype.canExecute = function(cmd, hud, rules) {};
+    GameCmdInterpreter.prototype.canExecute = function(gameState, rules, cmd) {
+      this.testState.resources.minerals = gameState.resources.minerals;
+      this.testState.resources.gas = gameState.resources.gas;
+      this.testState.supply.inUse = gameState.supply.inUse;
+      this.testState.supply.cap = gameState.supply.cap;
+      this.applyRuleForAction(this.testState, rules, cmd.verb, cmd.verbObject);
+      if (this.testState.resources.minerals < 0) {
+        return false;
+      }
+      if (this.testState.resources.gas < 0) {
+        return false;
+      }
+      if (this.testState.supply.inUse > this.testState.supply.cap) {
+        return false;
+      }
+      return true;
+    };
+
+    GameCmdInterpreter.prototype.applyRuleForAction = function(gameState, rules, verb, verbObject) {
+      return rules[this.verbToRule[verb]](gameState, verbObject);
+    };
 
     return GameCmdInterpreter;
 
