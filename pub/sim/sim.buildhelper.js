@@ -19,7 +19,7 @@
       iterator = function() {
         return true;
       };
-      cmd = SCSim.Cmd.selectA("nexus").say("trainUnit", "probe");
+      cmd = SCSim.GameCmd.select("nexus").and.train("probe");
       _results = [];
       for (i = _i = 0, _ref1 = numProbes - 1; 0 <= _ref1 ? _i <= _ref1 : _i >= _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
         _results.push(smarts.addToBuild(i * 17, iterator, cmd));

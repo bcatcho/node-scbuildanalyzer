@@ -19,7 +19,7 @@
     simRun = new SCSim.SimRun;
     sim = simRun.sim;
     simRun.start();
-    base = simRun.hud.structures.nexus[0];
+    base = simRun.gameState.structures.nexus[0];
     return describe('When the base creates a new worker', function() {
       base.say("trainUnit", 'probe');
       return it('the base should receive minerals after some time', function() {
@@ -37,7 +37,7 @@
     simRun = new SCSim.SimRun;
     sim = simRun.sim;
     simRun.start();
-    base = simRun.hud.structures.nexus[0];
+    base = simRun.gameState.structures.nexus[0];
     it('should queue up two workers at base', function() {
       base.say("trainUnit", 'probe');
       base.say("trainUnit", 'probe');

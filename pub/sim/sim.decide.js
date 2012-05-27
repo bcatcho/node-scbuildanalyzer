@@ -88,17 +88,19 @@
 
   SCSim.Smarts = (function() {
 
-    function Smarts(gameData) {
+    function Smarts() {
       this.build = [];
-      this.rules = new SCSim.GameRules(gameData);
+      this.interp = new SCSim.GameCmdInterpreter;
     }
 
-    Smarts.prototype.decideNextCommand = function(hud, time) {
+    Smarts.prototype.decideNextCommand = function(hud, time, rules) {
       if (this.build.length === 0) {
         return null;
       }
-      if (this.build[0].seconds <= time.sec && this.build[0].iterator(hud, this.rules)) {
-        return this.build.pop(0).cmd;
+      if (this.build[0].seconds <= time.sec && this.build[0].iterator(hud, rules)) {
+        if (this.interp.canExecute(hud, rules, this.build[0].cmd)) {
+          return this.build.pop(0).cmd;
+        }
       }
       return null;
     };
@@ -124,17 +126,19 @@
 
     function SimRun(gameData, smarts) {
       this.gameData = gameData != null ? gameData : SCSim.data;
-      this.smarts = smarts != null ? smarts : new SCSim.Smarts;
+      this.rules = new SCSim.GameRules(this.gameData);
+      this.smarts = smarts != null ? smarts : new SCSim.Smarts(this.rules);
       this.emitter = new SCSim.EventEmitter;
-      this.hud = new SCSim.Hud(this.emitter);
+      this.gameState = new SCSim.GameState(this.emitter, this.rules);
       this.sim = new SCSim.Simulation(this.emitter, this.gameData);
+      this.interp = new SCSim.GameCmdInterpreter;
     }
 
     SimRun.prototype.update = function() {
       var command;
-      command = this.smarts.decideNextCommand(this.hud, this.sim.time);
-      if (command != null) {
-        command.execute(this.hud);
+      command = this.smarts.decideNextCommand(this.gameState, this.sim.time, this.rules);
+      if (command) {
+        this.interp.execute(this.gameState, this.rules, command);
       }
       return this.sim.update();
     };

@@ -29,7 +29,7 @@ describe "SCSim.Cmd", ->
     beforeEach ->
       simRun = new SCSim.SimRun gameData
       sim = simRun.sim
-      hud = simRun.hud
+      hud = simRun.gameState
 
     it "constructs a command on selectUnit", ->
       unit = sim.makeActor "testUnit"
@@ -44,7 +44,7 @@ describe "SCSim.Cmd", ->
     beforeEach ->
       simRun = new SCSim.SimRun gameData
       sim = simRun.sim
-      hud = simRun.hud
+      hud = simRun.gameState
 
     it "returns a cmd that modifies a specific type of actor", ->
       unit = sim.makeActor "testUnit"
@@ -92,22 +92,25 @@ describe "SCSim.Smarts", ->
     gameData.addUnit "minOnly", 10, 0, 10, 1
     gameData.addUnit "gasOnly", 0, 10, 10, 1
     gameData.addUnit "minAndGas", 10, 10, 10, 1
-    smarts = new SCSim.Smarts gameData
-    hud = new SCSim.Hud new SCSim.EventEmitter
+    rules = new SCSim.GameRules gameData
+    smarts = new SCSim.Smarts rules
+    hud = new SCSim.GameState new SCSim.EventEmitter, rules
 
-    buyMinOnly = () -> "buyMinOnly"
+    buyMinOnly = SCSim.GameCmd.select("nexus").and.train "minOnly"
 
-    canBuyMinOnly = (hud, rules) ->
-      rules.canTrainUnit hud, "minOnly"
+    canBuyMinOnly = (hud, rules) -> true
 
     beforeEach ->
-      [hud.minerals, hud.gas] = [0, 0]
-      smarts = new SCSim.Smarts gameData
+      [hud.resources.minerals, hud.resources.gas] = [0, 0]
+      hud.supply.inUse = 0
+      hud.supply.cap = 10
+      smarts = new SCSim.Smarts rules
 
     it "will buy a unit it can afford and has enough supply for", ->
       smarts.addToBuild 0, canBuyMinOnly, buyMinOnly
-      hud.minerals = 10
-      hud.supply = 9
+      hud.resources.minerals = 10
+      hud.supply.inUse = 9
+
       time = new SCSim.SimTime
 
       cmd = smarts.decideNextCommand hud, time
@@ -115,8 +118,8 @@ describe "SCSim.Smarts", ->
 
     it "will not buy something it can't afford", ->
       smarts.addToBuild 0, canBuyMinOnly, buyMinOnly
-      hud.minerals = 9
-      hud.supply = 9
+      hud.resources.minerals = 9
+      hud.supply.inUse = 9
       time = new SCSim.SimTime
 
       cmd = smarts.decideNextCommand hud, time
@@ -124,8 +127,8 @@ describe "SCSim.Smarts", ->
 
     it "will buy what it can afford at a specified time", ->
       smarts.addToBuild 20, canBuyMinOnly, buyMinOnly
-      hud.minerals = 10
-      hud.supply = 9
+      hud.resources.minerals = 10
+      hud.supply.inUse = 9
       time = new SCSim.SimTime 20
 
       cmd = smarts.decideNextCommand hud, time
@@ -133,8 +136,8 @@ describe "SCSim.Smarts", ->
 
     it "won't buy what it can afford _before_ the specified time", ->
       smarts.addToBuild 20, canBuyMinOnly, buyMinOnly
-      hud.minerals = 10
-      hud.supply = 9
+      hud.resources.minerals = 10
+      hud.supply.inUse = 9
       time = new SCSim.SimTime 19
 
       cmd = smarts.decideNextCommand hud, time

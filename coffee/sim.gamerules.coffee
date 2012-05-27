@@ -11,17 +11,21 @@ enumFromList = (list...) ->
   obj[str] = str for str in list
   obj
 
-SCe.Msg = enumFromList "DepositMinerals", "TrainingComplete", "trainUnit"
+SCe.Msg = enumFromList "depositMinerals", "trainingComplete", "trainUnit"
 
 
 # Tracks game state by observing and evaluating sim events with GameRules
 class SCSim.GameState
   constructor: (emitter, rules) ->
-    @resources = minerals : 0, gas: 0
-    @supply = inUse: 0, cap: 0
+    @resources = minerals : 50, gas: 0
+    @supply = inUse: 0, cap: 10
     @units = {}
     @structures = {}
     @observeEvents emitter, rules
+
+  addUnit: (unit) ->
+    @units[unit.actorName] = [] if not @units[unit.actorName]
+    @units[unit.actorName].push unit
 
   observeEvents: (emitter, rules) ->
     # convenience method
@@ -29,9 +33,30 @@ class SCSim.GameState
       emitter.observe eventName, (eventObj) ->
         callBack filter(eventObj)
 
-    obs SCe.Msg.DepositMinerals,
+    obs SCe.Msg.depositMinerals,
       (e) -> e.args[0],
       (minAmt) => rules.applyCollectResources @, minAmt, 0
+    
+    obs SCe.Msg.trainingComplete,
+      (e) -> e.args[0],
+      (actor) =>
+        # FIXME this is a terrible way to detect new buildings maybe
+        if SCSim.data.isStructure actor.actorName
+          @structures[actor.actorName] ?= []
+          @structures[actor.actorName].push actor
+        #else
+        #  u = SCSim.data.units[unit.actorName]
+        #  @supply.inUse += u.supply
+        #  @units[actor.actorName] ?= []
+        #  @units[actor.actorName].push actor
+
+    obs "trainUnitComplete",
+      (e) -> e.args[0],
+      (unit) =>
+        u = SCSim.data.units[unit.actorName]
+        @supply.inUse += u.supply
+        @units[unit.actorName] ?= []
+        @units[unit.actorName].push unit
 
 
 class SCSim.GameRules
@@ -79,10 +104,11 @@ class SCSim.GameCmdInterpreter
     @verbToRule =
       train: "applyTrainUnit"
 
-  execute: (gameState, cmd, rules) ->
-    actor = gameState.units[cmd.subject] || gameState.structures[cmd.subject]
+  execute: (gameState, rules, cmd) ->
+    actors = gameState.units[cmd.subject] || gameState.structures[cmd.subject]
+    actor = actors[0]
     @_applyRuleForAction gameState, rules, cmd.verb, cmd.verbObject
-    @_executeAction subjectActor, cmd.verb, cmd.verbObject
+    @_executeAction actor, cmd.verb, cmd.verbObject
 
   canExecute: (gameState, rules, cmd) ->
     @testState.resources.minerals = gameState.resources.minerals

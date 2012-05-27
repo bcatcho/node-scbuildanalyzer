@@ -15,7 +15,7 @@ describe 'Simulation with one base one worker', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
   simRun.start()
-  base = simRun.hud.structures.nexus[0]
+  base = simRun.gameState.structures.nexus[0]
 
   describe 'When the base creates a new worker', ->
     base.say "trainUnit", 'probe'
@@ -29,7 +29,7 @@ describe 'Simulation with one base and two workers', ->
   simRun = new SCSim.SimRun
   sim = simRun.sim
   simRun.start()
-  base = simRun.hud.structures.nexus[0]
+  base = simRun.gameState.structures.nexus[0]
 
   it 'should queue up two workers at base', ->
     base.say "trainUnit", 'probe'

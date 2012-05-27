@@ -28,23 +28,30 @@
     return obj;
   };
 
-  SCe.Msg = enumFromList("DepositMinerals", "TrainingComplete", "trainUnit");
+  SCe.Msg = enumFromList("depositMinerals", "trainingComplete", "trainUnit");
 
   SCSim.GameState = (function() {
 
     function GameState(emitter, rules) {
       this.resources = {
-        minerals: 0,
+        minerals: 50,
         gas: 0
       };
       this.supply = {
         inUse: 0,
-        cap: 0
+        cap: 10
       };
       this.units = {};
       this.structures = {};
       this.observeEvents(emitter, rules);
     }
+
+    GameState.prototype.addUnit = function(unit) {
+      if (!this.units[unit.actorName]) {
+        this.units[unit.actorName] = [];
+      }
+      return this.units[unit.actorName].push(unit);
+    };
 
     GameState.prototype.observeEvents = function(emitter, rules) {
       var obs,
@@ -54,10 +61,32 @@
           return callBack(filter(eventObj));
         });
       };
-      return obs(SCe.Msg.DepositMinerals, function(e) {
+      obs(SCe.Msg.depositMinerals, function(e) {
         return e.args[0];
       }, function(minAmt) {
         return rules.applyCollectResources(_this, minAmt, 0);
+      });
+      obs(SCe.Msg.trainingComplete, function(e) {
+        return e.args[0];
+      }, function(actor) {
+        var _base, _name, _ref2;
+        if (SCSim.data.isStructure(actor.actorName)) {
+          if ((_ref2 = (_base = _this.structures)[_name = actor.actorName]) == null) {
+            _base[_name] = [];
+          }
+          return _this.structures[actor.actorName].push(actor);
+        }
+      });
+      return obs("trainUnitComplete", function(e) {
+        return e.args[0];
+      }, function(unit) {
+        var u, _base, _name, _ref2;
+        u = SCSim.data.units[unit.actorName];
+        _this.supply.inUse += u.supply;
+        if ((_ref2 = (_base = _this.units)[_name = unit.actorName]) == null) {
+          _base[_name] = [];
+        }
+        return _this.units[unit.actorName].push(unit);
       });
     };
 
@@ -134,11 +163,12 @@
       };
     }
 
-    GameCmdInterpreter.prototype.execute = function(gameState, cmd, rules) {
-      var actor;
-      actor = gameState.units[cmd.subject] || gameState.structures[cmd.subject];
+    GameCmdInterpreter.prototype.execute = function(gameState, rules, cmd) {
+      var actor, actors;
+      actors = gameState.units[cmd.subject] || gameState.structures[cmd.subject];
+      actor = actors[0];
       this._applyRuleForAction(gameState, rules, cmd.verb, cmd.verbObject);
-      return this._executeAction(subjectActor, cmd.verb, cmd.verbObject);
+      return this._executeAction(actor, cmd.verb, cmd.verbObject);
     };
 
     GameCmdInterpreter.prototype.canExecute = function(gameState, rules, cmd) {

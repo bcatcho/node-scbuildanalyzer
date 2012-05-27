@@ -57,7 +57,7 @@
         var simRun;
         simRun = new SCSim.SimRun(gameData);
         sim = simRun.sim;
-        return hud = simRun.hud;
+        return hud = simRun.gameState;
       });
       return it("constructs a command on selectUnit", function() {
         var cmd, unit;
@@ -74,7 +74,7 @@
         var simRun;
         simRun = new SCSim.SimRun(gameData);
         sim = simRun.sim;
-        return hud = simRun.hud;
+        return hud = simRun.gameState;
       });
       it("returns a cmd that modifies a specific type of actor", function() {
         var cmd, unit;
@@ -125,29 +125,30 @@
       });
     });
     return describe("decideNextCommand()", function() {
-      var buyMinOnly, canBuyMinOnly, gameData, hud, smarts;
+      var buyMinOnly, canBuyMinOnly, gameData, hud, rules, smarts;
       gameData = new SCSim.GameData;
       gameData.addUnit("minOnly", 10, 0, 10, 1);
       gameData.addUnit("gasOnly", 0, 10, 10, 1);
       gameData.addUnit("minAndGas", 10, 10, 10, 1);
-      smarts = new SCSim.Smarts(gameData);
-      hud = new SCSim.Hud(new SCSim.EventEmitter);
-      buyMinOnly = function() {
-        return "buyMinOnly";
-      };
+      rules = new SCSim.GameRules(gameData);
+      smarts = new SCSim.Smarts(rules);
+      hud = new SCSim.GameState(new SCSim.EventEmitter, rules);
+      buyMinOnly = SCSim.GameCmd.select("nexus").and.train("minOnly");
       canBuyMinOnly = function(hud, rules) {
-        return rules.canTrainUnit(hud, "minOnly");
+        return true;
       };
       beforeEach(function() {
         var _ref;
-        _ref = [0, 0], hud.minerals = _ref[0], hud.gas = _ref[1];
-        return smarts = new SCSim.Smarts(gameData);
+        _ref = [0, 0], hud.resources.minerals = _ref[0], hud.resources.gas = _ref[1];
+        hud.supply.inUse = 0;
+        hud.supply.cap = 10;
+        return smarts = new SCSim.Smarts(rules);
       });
       it("will buy a unit it can afford and has enough supply for", function() {
         var cmd, time;
         smarts.addToBuild(0, canBuyMinOnly, buyMinOnly);
-        hud.minerals = 10;
-        hud.supply = 9;
+        hud.resources.minerals = 10;
+        hud.supply.inUse = 9;
         time = new SCSim.SimTime;
         cmd = smarts.decideNextCommand(hud, time);
         return cmd.should.equal(buyMinOnly);
@@ -155,8 +156,8 @@
       it("will not buy something it can't afford", function() {
         var cmd, time;
         smarts.addToBuild(0, canBuyMinOnly, buyMinOnly);
-        hud.minerals = 9;
-        hud.supply = 9;
+        hud.resources.minerals = 9;
+        hud.supply.inUse = 9;
         time = new SCSim.SimTime;
         cmd = smarts.decideNextCommand(hud, time);
         return expect(cmd).to.be["null"];
@@ -164,8 +165,8 @@
       it("will buy what it can afford at a specified time", function() {
         var cmd, time;
         smarts.addToBuild(20, canBuyMinOnly, buyMinOnly);
-        hud.minerals = 10;
-        hud.supply = 9;
+        hud.resources.minerals = 10;
+        hud.supply.inUse = 9;
         time = new SCSim.SimTime(20);
         cmd = smarts.decideNextCommand(hud, time);
         return cmd.should.equal(buyMinOnly);
@@ -173,8 +174,8 @@
       return it("won't buy what it can afford _before_ the specified time", function() {
         var cmd, time;
         smarts.addToBuild(20, canBuyMinOnly, buyMinOnly);
-        hud.minerals = 10;
-        hud.supply = 9;
+        hud.resources.minerals = 10;
+        hud.supply.inUse = 9;
         time = new SCSim.SimTime(19);
         cmd = smarts.decideNextCommand(hud, time);
         return expect(cmd).to.be["null"];

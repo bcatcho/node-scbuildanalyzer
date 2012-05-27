@@ -12,9 +12,17 @@
 
   SCSim.helpers = {
     setupMap: function(sim) {
-      var nexus;
+      var i, minPatch, nexus, probe, _i, _results;
       nexus = sim.makeActor("nexus");
-      return nexus.say("trainInstantly");
+      nexus.say("trainInstantly");
+      minPatch = nexus.get("getMostAvailableMinPatch");
+      _results = [];
+      for (i = _i = 0; _i <= 4; i = ++_i) {
+        probe = sim.makeActor("probe");
+        probe.say("trainInstantly");
+        _results.push(probe.say("gatherFromResource", minPatch));
+      }
+      return _results;
     }
   };
 

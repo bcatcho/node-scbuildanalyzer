@@ -58,15 +58,16 @@ class SCSim.Hud
 # This will be the interface by which the user can control the simulation
 # it takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.Smarts
-  constructor: (gameData) ->
+  constructor: ->
     @build = []
-    @rules = new SCSim.GameRules gameData
+    @interp = new SCSim.GameCmdInterpreter
 
-  decideNextCommand: (hud, time) ->
+  decideNextCommand: (hud, time, rules) ->
     if (@build.length == 0)
       return null
-    if (@build[0].seconds <= time.sec and @build[0].iterator(hud, @rules))
-      return @build.pop(0).cmd
+    if (@build[0].seconds <= time.sec and @build[0].iterator(hud,rules))
+      if (@interp.canExecute hud, rules, @build[0].cmd)
+        return @build.pop(0).cmd
     null
 
   addToBuild: (seconds, iterator, cmd) ->
@@ -78,16 +79,19 @@ class SCSim.Smarts
 class SCSim.SimRun
   constructor: (gameData, smarts) ->
     @gameData = gameData ? SCSim.data
-    @smarts = smarts ? new SCSim.Smarts
+    @rules = new SCSim.GameRules @gameData
+    @smarts = smarts ? new SCSim.Smarts @rules
     @emitter = new SCSim.EventEmitter
-    @hud = new SCSim.Hud @emitter
+    @gameState = new SCSim.GameState @emitter, @rules
     @sim = new SCSim.Simulation @emitter, @gameData
+    @interp = new SCSim.GameCmdInterpreter
 
   update: ->
     # pass the current gamestate (HUD) to the smarts
-    command = @smarts.decideNextCommand @hud, @sim.time
+    command = @smarts.decideNextCommand @gameState, @sim.time, @rules
     # execute whatever the smarts decides
-    command?.execute(@hud)
+    if command
+      @interp.execute @gameState, @rules, command
     # advance one tick
     @sim.update()
 

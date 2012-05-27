@@ -7,6 +7,6 @@ _ = root._ #require underscore
 class SCSim.BuildHelper
   trainProbesConstantly: (smarts, numProbes) ->
     iterator = () -> true
-    cmd = SCSim.Cmd.selectA("nexus").say("trainUnit", "probe")
+    cmd = SCSim.GameCmd.select("nexus").and.train "probe"
     for i in [0..numProbes-1]
       smarts.addToBuild i*17, iterator, cmd
