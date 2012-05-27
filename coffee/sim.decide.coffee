@@ -96,6 +96,7 @@ class SCSim.SimRun
     @sim.update()
 
   start: ->
+    SCSim.helpers.setupResources @gameState
     @sim.say "start"
 
 

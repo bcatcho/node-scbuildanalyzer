@@ -59,6 +59,14 @@ class SCSim.Trainer extends SCSim.Behavior
         @queued.push unitName
         @updateBuildQueue()
 
+      trainUnitInstantly: (unitName) ->
+        actor = @sim.makeActor unitName
+        # Notify the whole actor when the unit completes so that other behaviors
+        # can add their own hooks
+        actor.say "addCallback", ((unit) => @say "trainUnitComplete", unit)
+        actor.say "trainInstantly"
+
+
       trainUnitComplete: (unit) ->
         @building = undefined
         @updateBuildQueue()

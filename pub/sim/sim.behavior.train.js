@@ -100,6 +100,15 @@
           this.queued.push(unitName);
           return this.updateBuildQueue();
         },
+        trainUnitInstantly: function(unitName) {
+          var actor,
+            _this = this;
+          actor = this.sim.makeActor(unitName);
+          actor.say("addCallback", (function(unit) {
+            return _this.say("trainUnitComplete", unit);
+          }));
+          return actor.say("trainInstantly");
+        },
         trainUnitComplete: function(unit) {
           this.building = void 0;
           return this.updateBuildQueue();

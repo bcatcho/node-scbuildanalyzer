@@ -120,7 +120,7 @@
       return gState = new SCSim.GameState(emitter, rules);
     });
     return it("increases in minerals on Msg.DepositMinerals", function() {
-      emitter.makeAndFire(SCe.Msg.DepositMinerals, null, null, 5);
+      emitter.makeAndFire(SCe.Msg.depositMinerals, null, null, 5);
       return gState.resources.minerals.should.equal(5);
     });
   });

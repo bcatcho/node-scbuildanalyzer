@@ -11,16 +11,19 @@
   _ = root._;
 
   SCSim.helpers = {
+    setupResources: function(gameState) {
+      gameState.resources.minerals = 50;
+      gameState.resources.gas = 0;
+      gameState.supply.inUse = 0;
+      return gameState.supply.cap = 10;
+    },
     setupMap: function(sim) {
-      var i, minPatch, nexus, probe, _i, _results;
+      var i, nexus, _i, _results;
       nexus = sim.makeActor("nexus");
       nexus.say("trainInstantly");
-      minPatch = nexus.get("getMostAvailableMinPatch");
       _results = [];
-      for (i = _i = 0; _i <= 4; i = ++_i) {
-        probe = sim.makeActor("probe");
-        probe.say("trainInstantly");
-        _results.push(probe.say("gatherFromResource", minPatch));
+      for (i = _i = 0; _i <= 5; i = ++_i) {
+        _results.push(nexus.say("trainUnitInstantly", "probe"));
       }
       return _results;
     }

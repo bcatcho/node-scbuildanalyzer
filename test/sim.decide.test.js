@@ -133,6 +133,7 @@
       rules = new SCSim.GameRules(gameData);
       smarts = new SCSim.Smarts(rules);
       hud = new SCSim.GameState(new SCSim.EventEmitter, rules);
+      SCSim.helpers.setupResources(hud);
       buyMinOnly = SCSim.GameCmd.select("nexus").and.train("minOnly");
       canBuyMinOnly = function(hud, rules) {
         return true;
@@ -150,7 +151,7 @@
         hud.resources.minerals = 10;
         hud.supply.inUse = 9;
         time = new SCSim.SimTime;
-        cmd = smarts.decideNextCommand(hud, time);
+        cmd = smarts.decideNextCommand(hud, time, rules);
         return cmd.should.equal(buyMinOnly);
       });
       it("will not buy something it can't afford", function() {
@@ -159,7 +160,7 @@
         hud.resources.minerals = 9;
         hud.supply.inUse = 9;
         time = new SCSim.SimTime;
-        cmd = smarts.decideNextCommand(hud, time);
+        cmd = smarts.decideNextCommand(hud, time, rules);
         return expect(cmd).to.be["null"];
       });
       it("will buy what it can afford at a specified time", function() {
@@ -168,7 +169,7 @@
         hud.resources.minerals = 10;
         hud.supply.inUse = 9;
         time = new SCSim.SimTime(20);
-        cmd = smarts.decideNextCommand(hud, time);
+        cmd = smarts.decideNextCommand(hud, time, rules);
         return cmd.should.equal(buyMinOnly);
       });
       return it("won't buy what it can afford _before_ the specified time", function() {

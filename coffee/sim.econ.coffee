@@ -20,9 +20,7 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
       min = @sim.makeActor "minPatch"
       min.say "setBase", @
       @_mins.push min
-    @harvesters = @sim.makeActor("probe") for i in [1..6]
     @_rallyResource = @_mins[0]
-    h.say "gatherFromResource", @_rallyResource for h in @harvesters
 
   getMostAvailableMinPatch: ->
     # TODO you don't understand how this works

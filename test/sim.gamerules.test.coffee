@@ -89,7 +89,7 @@ describe "SCSim.GameState", ->
     gState = new SCSim.GameState emitter, rules
 
   it "increases in minerals on Msg.DepositMinerals", ->
-    emitter.makeAndFire SCe.Msg.DepositMinerals, null, null, 5
+    emitter.makeAndFire SCe.Msg.depositMinerals, null, null, 5
 
     gState.resources.minerals.should.equal 5
 

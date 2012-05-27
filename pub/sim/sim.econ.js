@@ -32,24 +32,14 @@
     };
 
     PrimaryStructure.prototype.instantiate = function() {
-      var h, i, min, _i, _j, _k, _len, _ref1, _results;
+      var i, min, _i;
       PrimaryStructure.__super__.instantiate.call(this);
       for (i = _i = 1; _i <= 8; i = ++_i) {
         min = this.sim.makeActor("minPatch");
         min.say("setBase", this);
         this._mins.push(min);
       }
-      for (i = _j = 1; _j <= 6; i = ++_j) {
-        this.harvesters = this.sim.makeActor("probe");
-      }
-      this._rallyResource = this._mins[0];
-      _ref1 = this.harvesters;
-      _results = [];
-      for (_k = 0, _len = _ref1.length; _k < _len; _k++) {
-        h = _ref1[_k];
-        _results.push(h.say("gatherFromResource", this._rallyResource));
-      }
-      return _results;
+      return this._rallyResource = this._mins[0];
     };
 
     PrimaryStructure.prototype.getMostAvailableMinPatch = function() {

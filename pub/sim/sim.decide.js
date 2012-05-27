@@ -144,6 +144,7 @@
     };
 
     SimRun.prototype.start = function() {
+      SCSim.helpers.setupResources(this.gameState);
       return this.sim.say("start");
     };
 

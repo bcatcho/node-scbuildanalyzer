@@ -17,8 +17,8 @@ SCe.Msg = enumFromList "depositMinerals", "trainingComplete", "trainUnit"
 # Tracks game state by observing and evaluating sim events with GameRules
 class SCSim.GameState
   constructor: (emitter, rules) ->
-    @resources = minerals : 50, gas: 0
-    @supply = inUse: 0, cap: 10
+    @resources = minerals : 0, gas: 0
+    @supply = inUse: 0, cap: 0
     @units = {}
     @structures = {}
     @observeEvents emitter, rules
@@ -44,11 +44,6 @@ class SCSim.GameState
         if SCSim.data.isStructure actor.actorName
           @structures[actor.actorName] ?= []
           @structures[actor.actorName].push actor
-        #else
-        #  u = SCSim.data.units[unit.actorName]
-        #  @supply.inUse += u.supply
-        #  @units[actor.actorName] ?= []
-        #  @units[actor.actorName].push actor
 
     obs "trainUnitComplete",
       (e) -> e.args[0],

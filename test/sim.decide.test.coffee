@@ -95,6 +95,7 @@ describe "SCSim.Smarts", ->
     rules = new SCSim.GameRules gameData
     smarts = new SCSim.Smarts rules
     hud = new SCSim.GameState new SCSim.EventEmitter, rules
+    SCSim.helpers.setupResources hud
 
     buyMinOnly = SCSim.GameCmd.select("nexus").and.train "minOnly"
 
@@ -113,7 +114,7 @@ describe "SCSim.Smarts", ->
 
       time = new SCSim.SimTime
 
-      cmd = smarts.decideNextCommand hud, time
+      cmd = smarts.decideNextCommand hud, time, rules
       cmd.should.equal buyMinOnly
 
     it "will not buy something it can't afford", ->
@@ -122,7 +123,7 @@ describe "SCSim.Smarts", ->
       hud.supply.inUse = 9
       time = new SCSim.SimTime
 
-      cmd = smarts.decideNextCommand hud, time
+      cmd = smarts.decideNextCommand hud, time, rules
       expect(cmd).to.be.null
 
     it "will buy what it can afford at a specified time", ->
@@ -131,7 +132,7 @@ describe "SCSim.Smarts", ->
       hud.supply.inUse = 9
       time = new SCSim.SimTime 20
 
-      cmd = smarts.decideNextCommand hud, time
+      cmd = smarts.decideNextCommand hud, time, rules
       cmd.should.equal buyMinOnly
 
     it "won't buy what it can afford _before_ the specified time", ->

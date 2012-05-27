@@ -34,12 +34,12 @@
 
     function GameState(emitter, rules) {
       this.resources = {
-        minerals: 50,
+        minerals: 0,
         gas: 0
       };
       this.supply = {
         inUse: 0,
-        cap: 10
+        cap: 0
       };
       this.units = {};
       this.structures = {};
