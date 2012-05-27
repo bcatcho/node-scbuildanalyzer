@@ -11,7 +11,7 @@ enumFromList = (list...) ->
   obj[str] = str for str in list
   obj
 
-SCe.Msg = enumFromList "DepositMinerals", "TrainingComplete"
+SCe.Msg = enumFromList "DepositMinerals", "TrainingComplete", "trainUnit"
 
 
 # Tracks game state by observing and evaluating sim events with GameRules
@@ -68,7 +68,7 @@ class SCSim.GameRules
 # It serves as a proxy between the Sim and a User
 class SCSim.GameCmdInterpreter
   constructor: (@hud, @rules) ->
-    @testState = 
+    @testState =
       resources:
         minerals : 0
         gas: 0
@@ -79,8 +79,10 @@ class SCSim.GameCmdInterpreter
     @verbToRule =
       train: "applyTrainUnit"
 
-  execute: (cmd, hud, rules) ->
-    false
+  execute: (gameState, cmd, rules) ->
+    actor = gameState.units[cmd.subject] || gameState.structures[cmd.subject]
+    @_applyRuleForAction gameState, rules, cmd.verb, cmd.verbObject
+    @_executeAction subjectActor, cmd.verb, cmd.verbObject
 
   canExecute: (gameState, rules, cmd) ->
     @testState.resources.minerals = gameState.resources.minerals
@@ -88,15 +90,22 @@ class SCSim.GameCmdInterpreter
     @testState.supply.inUse = gameState.supply.inUse
     @testState.supply.cap = gameState.supply.cap
 
-    @applyRuleForAction @testState, rules, cmd.verb, cmd.verbObject
+    @_applyRuleForAction @testState, rules, cmd.verb, cmd.verbObject
 
     return false if (@testState.resources.minerals < 0)
     return false if (@testState.resources.gas < 0)
     return false if (@testState.supply.inUse > @testState.supply.cap)
     return true
 
-  applyRuleForAction: (gameState, rules, verb, verbObject) ->
+  _applyRuleForAction: (gameState, rules, verb, verbObject) ->
     rules[@verbToRule[verb]] gameState, verbObject
+  
+  _executeAction: (actor, verb, verbObject) ->
+    @_actions[verb] actor, verbObject
+  
+  _actions:
+    train: (actor, verbObject) ->
+      actor.say SCe.Msg.trainUnit, verbObject
 
 
 class SCSim.GameCmd

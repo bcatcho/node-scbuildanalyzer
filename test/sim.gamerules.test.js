@@ -137,7 +137,7 @@
       gState = new SCSim.GameState(emitter, rules);
       return interp = new SCSim.GameCmdInterpreter;
     });
-    return describe("canApplyRule", function() {
+    return describe("canExecute", function() {
       it("returns true when enough resources & supply to train", function() {
         var cmd, result;
         gState.resources.minerals = 10;

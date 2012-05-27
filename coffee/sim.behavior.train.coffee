@@ -1,6 +1,7 @@
 root = exports ? this
 
 SCSim = root.SCSim ? {}; root.SCSim = SCSim
+SCSim.Enums ?= {}; SCe = SCSim.Enums # convenience enum lookup
 _ = root._ #require underscore
 
 

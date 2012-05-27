@@ -105,7 +105,7 @@ describe "SCSim.GameCmdInterpreter", ->
     gState = new SCSim.GameState emitter, rules
     interp = new SCSim.GameCmdInterpreter
 
-  describe "canApplyRule", ->
+  describe "canExecute", ->
     it "returns true when enough resources & supply to train", ->
       gState.resources.minerals = 10
       gState.resources.gas = 10

@@ -28,7 +28,7 @@
     return obj;
   };
 
-  SCe.Msg = enumFromList("DepositMinerals", "TrainingComplete");
+  SCe.Msg = enumFromList("DepositMinerals", "TrainingComplete", "trainUnit");
 
   SCSim.GameState = (function() {
 
@@ -134,8 +134,11 @@
       };
     }
 
-    GameCmdInterpreter.prototype.execute = function(cmd, hud, rules) {
-      return false;
+    GameCmdInterpreter.prototype.execute = function(gameState, cmd, rules) {
+      var actor;
+      actor = gameState.units[cmd.subject] || gameState.structures[cmd.subject];
+      this._applyRuleForAction(gameState, rules, cmd.verb, cmd.verbObject);
+      return this._executeAction(subjectActor, cmd.verb, cmd.verbObject);
     };
 
     GameCmdInterpreter.prototype.canExecute = function(gameState, rules, cmd) {
@@ -143,7 +146,7 @@
       this.testState.resources.gas = gameState.resources.gas;
       this.testState.supply.inUse = gameState.supply.inUse;
       this.testState.supply.cap = gameState.supply.cap;
-      this.applyRuleForAction(this.testState, rules, cmd.verb, cmd.verbObject);
+      this._applyRuleForAction(this.testState, rules, cmd.verb, cmd.verbObject);
       if (this.testState.resources.minerals < 0) {
         return false;
       }
@@ -156,8 +159,18 @@
       return true;
     };
 
-    GameCmdInterpreter.prototype.applyRuleForAction = function(gameState, rules, verb, verbObject) {
+    GameCmdInterpreter.prototype._applyRuleForAction = function(gameState, rules, verb, verbObject) {
       return rules[this.verbToRule[verb]](gameState, verbObject);
+    };
+
+    GameCmdInterpreter.prototype._executeAction = function(actor, verb, verbObject) {
+      return this._actions[verb](actor, verbObject);
+    };
+
+    GameCmdInterpreter.prototype._actions = {
+      train: function(actor, verbObject) {
+        return actor.say(SCe.Msg.trainUnit, verbObject);
+      }
     };
 
     return GameCmdInterpreter;
