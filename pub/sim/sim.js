@@ -64,7 +64,7 @@
 
   makeSmarts = function(harvesterCount) {
     var helper, smarts;
-    smarts = new SCSim.Smarts;
+    smarts = new SCSim.BuildOrder;
     helper = new SCSim.BuildHelper;
     helper.trainProbesConstantly(smarts, harvesterCount);
     return smarts;

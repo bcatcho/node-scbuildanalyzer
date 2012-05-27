@@ -147,27 +147,3 @@ class SCSim.GameCmd
     return @
 
 
-# An abstraction to represent how a player would normally control the game
-# This layer is accessible to the user
-class SCSim.Cmd
-  constructor: (@subject, @verbs = [])->
-
-  @selectA: (name) ->
-    new @ (hud) ->
-      hud.structures[name]?[0] || hud.units[name]?[0]
-
-  # conjunctions for readability
-  and: -> @
-
-  say: (msg, a, b, c, d) ->
-    @verbs.push (unit) -> unit.say msg, a, b, c, d
-    return @
-
-  train =
-    structure: (name) ->
-    unit: (name) ->
-
-
-  execute: (hud) ->
-    s = @subject(hud)
-    v(s) for v in @verbs

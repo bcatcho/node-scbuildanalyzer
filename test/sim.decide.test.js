@@ -44,61 +44,10 @@
 
   })(SCSim.Behavior);
 
-  describe("SCSim.Cmd", function() {
-    var gameData;
-    gameData = new SCSim.GameData;
-    gameData.addUnit("testUnit", 0, 0, 2, 0, {
-      name: "TestCmdBehavior"
-    });
-    describe("select()", function() {
-      var hud, sim;
-      hud = sim = null;
-      beforeEach(function() {
-        var simRun;
-        simRun = new SCSim.SimRun(gameData);
-        sim = simRun.sim;
-        return hud = simRun.gameState;
-      });
-      return it("constructs a command on selectUnit", function() {
-        var cmd, unit;
-        unit = sim.makeActor("testUnit");
-        hud.addUnit(unit);
-        cmd = SCSim.Cmd.selectA("testUnit");
-        return cmd.should.be.an.instanceOf(SCSim.Cmd);
-      });
-    });
-    return describe("say()", function() {
-      var hud, sim;
-      hud = sim = null;
-      beforeEach(function() {
-        var simRun;
-        simRun = new SCSim.SimRun(gameData);
-        sim = simRun.sim;
-        return hud = simRun.gameState;
-      });
-      it("returns a cmd that modifies a specific type of actor", function() {
-        var cmd, unit;
-        unit = sim.makeActor("testUnit");
-        hud.addUnit(unit);
-        cmd = SCSim.Cmd.selectA("testUnit").say("prop100");
-        cmd.execute(hud);
-        return unit.get("prop").should.equal(100);
-      });
-      return it("can be chained with other commands", function() {
-        var cmd, unit;
-        unit = sim.makeActor("testUnit");
-        hud.addUnit(unit);
-        cmd = SCSim.Cmd.selectA("testUnit").say("prop100").say("propTimes2");
-        cmd.execute(hud);
-        return unit.get("prop").should.equal(200);
-      });
-    });
-  });
-
-  describe("SCSim.Smarts", function() {
+  describe("SCSim.BuildOrder", function() {
     describe("addToBuild()", function() {
       var smarts;
-      smarts = new SCSim.Smarts;
+      smarts = new SCSim.BuildOrder;
       it("adds first build step at index 0", function() {
         smarts.addToBuild(10, function() {
           return "first";
@@ -131,7 +80,7 @@
       gameData.addUnit("gasOnly", 0, 10, 10, 1);
       gameData.addUnit("minAndGas", 10, 10, 10, 1);
       rules = new SCSim.GameRules(gameData);
-      smarts = new SCSim.Smarts(rules);
+      smarts = new SCSim.BuildOrder(rules);
       hud = new SCSim.GameState(new SCSim.EventEmitter, rules);
       SCSim.helpers.setupResources(hud);
       buyMinOnly = SCSim.GameCmd.select("nexus").and.train("minOnly");
@@ -143,7 +92,7 @@
         _ref = [0, 0], hud.resources.minerals = _ref[0], hud.resources.gas = _ref[1];
         hud.supply.inUse = 0;
         hud.supply.cap = 10;
-        return smarts = new SCSim.Smarts(rules);
+        return smarts = new SCSim.BuildOrder(rules);
       });
       it("will buy a unit it can afford and has enough supply for", function() {
         var cmd, time;

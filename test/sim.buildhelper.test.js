@@ -18,7 +18,7 @@
       _ref = [null, null], bHelper = _ref[0], smarts = _ref[1];
       beforeEach(function() {
         bHelper = new SCSim.BuildHelper;
-        return smarts = new SCSim.Smarts;
+        return smarts = new SCSim.BuildOrder;
       });
       return it("creates probes every time one is about to finish", function() {
         bHelper.trainProbesConstantly(smarts, 2);

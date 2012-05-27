@@ -45,7 +45,7 @@ runSim = (harvesterCount, simLength = 600, smarts) ->
 
 
 makeSmarts = (harvesterCount) ->
-  smarts = new SCSim.Smarts
+  smarts = new SCSim.BuildOrder
   helper = new SCSim.BuildHelper
   helper.trainProbesConstantly smarts, harvesterCount
   smarts

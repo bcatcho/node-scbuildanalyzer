@@ -57,7 +57,7 @@ class SCSim.Hud
 
 # This will be the interface by which the user can control the simulation
 # it takes a build order and a HUD and makes decisions in the form of commands
-class SCSim.Smarts
+class SCSim.BuildOrder
   constructor: ->
     @build = []
     @interp = new SCSim.GameCmdInterpreter
@@ -80,7 +80,7 @@ class SCSim.SimRun
   constructor: (gameData, smarts) ->
     @gameData = gameData ? SCSim.data
     @rules = new SCSim.GameRules @gameData
-    @smarts = smarts ? new SCSim.Smarts @rules
+    @smarts = smarts ? new SCSim.BuildOrder @rules
     @emitter = new SCSim.EventEmitter
     @gameState = new SCSim.GameState @emitter, @rules
     @sim = new SCSim.Simulation @emitter, @gameData

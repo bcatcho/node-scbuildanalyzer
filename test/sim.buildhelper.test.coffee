@@ -13,7 +13,7 @@ describe "class BuildHelper", ->
 
     beforeEach ->
       bHelper = new SCSim.BuildHelper
-      smarts = new SCSim.Smarts
+      smarts = new SCSim.BuildOrder
 
     it "creates probes every time one is about to finish", ->
       bHelper.trainProbesConstantly smarts, 2

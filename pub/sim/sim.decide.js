@@ -86,14 +86,14 @@
 
   })();
 
-  SCSim.Smarts = (function() {
+  SCSim.BuildOrder = (function() {
 
-    function Smarts() {
+    function BuildOrder() {
       this.build = [];
       this.interp = new SCSim.GameCmdInterpreter;
     }
 
-    Smarts.prototype.decideNextCommand = function(hud, time, rules) {
+    BuildOrder.prototype.decideNextCommand = function(hud, time, rules) {
       if (this.build.length === 0) {
         return null;
       }
@@ -105,7 +105,7 @@
       return null;
     };
 
-    Smarts.prototype.addToBuild = function(seconds, iterator, cmd) {
+    BuildOrder.prototype.addToBuild = function(seconds, iterator, cmd) {
       var buildStep, index;
       buildStep = {
         seconds: seconds,
@@ -118,7 +118,7 @@
       return this.build.splice(index, 0, buildStep);
     };
 
-    return Smarts;
+    return BuildOrder;
 
   })();
 
@@ -127,7 +127,7 @@
     function SimRun(gameData, smarts) {
       this.gameData = gameData != null ? gameData : SCSim.data;
       this.rules = new SCSim.GameRules(this.gameData);
-      this.smarts = smarts != null ? smarts : new SCSim.Smarts(this.rules);
+      this.smarts = smarts != null ? smarts : new SCSim.BuildOrder(this.rules);
       this.emitter = new SCSim.EventEmitter;
       this.gameState = new SCSim.GameState(this.emitter, this.rules);
       this.sim = new SCSim.Simulation(this.emitter, this.gameData);
