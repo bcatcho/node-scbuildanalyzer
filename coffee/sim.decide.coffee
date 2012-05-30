@@ -4,59 +4,6 @@ SCSim = root.SCSim ? {}; root.SCSim = SCSim
 _ = root._ #require underscore
 
 
-class SCSim.Hud
-  constructor: (emitter) ->
-    @minerals = 0
-    @gas = 0
-    @supply = 0
-    @supplyCap = 10
-    @units = {} # my units (Maybe?)
-    @structures = {} # my buildings (Maybe ?)
-    @emitter = emitter
-    @setupEvents()
-
-  addUnit: (unit) ->
-    @units[unit.actorName] = [] if not @units[unit.actorName]
-    @units[unit.actorName].push unit
-
-  addEvent: (eventName, filter, callBack) ->
-    @emitter.observe eventName, (eventObj) -> callBack(filter(eventObj))
-
-  setupEvents: ->
-    @addEvent "depositMinerals",
-      (e) -> e.args[0],
-      (minAmt) => @minerals += minAmt
-
-    @addEvent "trainingComplete",
-      (e) -> e.args[0],
-      (actor) =>
-        # FIXME this is a terrible way to detect new buildings maybe
-        if SCSim.data.isStructure actor.actorName
-          @structures[actor.actorName] ?= []
-          @structures[actor.actorName].push actor
-
-    @addEvent "trainUnitComplete",
-      (e) -> e.args[0],
-      (unit) =>
-        u = SCSim.data.units[unit.actorName]
-        @supply += u.supply
-        @units[unit.actorName] ?= []
-        @units[unit.actorName].push unit
-
-    @addEvent "supplyCapIncreased",
-      (e) -> e.args[0],
-      (supplyAmt) => @supplyCap += supplyAmt
-
-    @addEvent "purchase",
-      (e) -> e.args[0],
-      (unitName) =>
-        u = SCSim.data[unitName]
-        @minerals -= u.min
-        @gas -= u.gas
-
-
-# This will be the interface by which the user can control the simulation
-# it takes a build order and a HUD and makes decisions in the form of commands
 class SCSim.BuildOrder
   constructor: ->
     @build = []
