@@ -7,7 +7,7 @@
   SCSim = root.SCSim;
 
   runSim = function(harvesterCount, simLength, smarts) {
-    var d, dataChunkTime, dataFirstPass, e, logs, n, perChunkToPerMin, results, sim, simRun, simTickLength, tickToDate, time, _i, _len, _ref,
+    var d, dataChunkTime, dataFirstPass, e, logs, n, perChunkToPerMin, results, simRun, simTickLength, tickToDate, time, _i, _len, _ref,
       _this = this;
     if (simLength == null) {
       simLength = 600;
@@ -20,17 +20,13 @@
       mineralsCollected: []
     };
     simRun = new SCSim.SimRun(SCSim.data, smarts);
-    sim = simRun.sim;
     simRun.emitter.observe('depositMinerals', function(e) {
       return logs.mineralsCollected.push({
         time: e.time.sec,
         amt: e.args[0]
       });
     });
-    simRun.start();
-    while (!(simRun.sim.time.sec >= simLength)) {
-      simRun.update();
-    }
+    simRun.runForSeconds(simLength);
     results = {
       data: [],
       markings: []

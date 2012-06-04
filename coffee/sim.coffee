@@ -13,15 +13,13 @@ runSim = (harvesterCount, simLength = 600, smarts) ->
     mineralsCollected: []
 
   simRun = new SCSim.SimRun SCSim.data, smarts
-  sim = simRun.sim
   simRun.emitter.observe 'depositMinerals',
      (e) => logs.mineralsCollected.push
       time: e.time.sec
       amt: e.args[0]
 
   # run the simulation
-  simRun.start()
-  simRun.update() until simRun.sim.time.sec >= simLength
+  simRun.runForSeconds(simLength)
 
   # process the logs
   results =

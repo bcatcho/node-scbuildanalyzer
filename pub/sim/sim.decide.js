@@ -58,7 +58,21 @@
       this.gameState = new SCSim.GameState(this.emitter, this.rules);
       this.sim = new SCSim.Simulation(this.emitter, this.gameData);
       this.interpreter = new SCSim.GameCmdInterpreter;
+      this.simHasStarted = false;
     }
+
+    SimRun.prototype.runForSeconds = function(seconds) {
+      var time, _results;
+      if (!this.simHasStarted) {
+        this.start();
+      }
+      time = this.sim.time;
+      _results = [];
+      while (!(time.sec > seconds)) {
+        _results.push(this.update());
+      }
+      return _results;
+    };
 
     SimRun.prototype.update = function() {
       var command;
@@ -70,7 +84,8 @@
 
     SimRun.prototype.start = function() {
       SCSim.helpers.setupResources(this.gameState);
-      return this.sim.say("start");
+      this.sim.say("start");
+      return this.simHasStarted = true;
     };
 
     return SimRun;

@@ -32,6 +32,12 @@ class SCSim.SimRun
     @gameState = new SCSim.GameState @emitter, @rules
     @sim = new SCSim.Simulation @emitter, @gameData
     @interpreter = new SCSim.GameCmdInterpreter
+    @simHasStarted = false
+
+  runForSeconds: (seconds) ->
+    @start() if (!@simHasStarted)
+    time = @sim.time
+    @update() until time.sec > seconds
 
   update: ->
     if command = @buildOrder.decideNextCommand @gameState, @sim.time, @rules
@@ -41,6 +47,7 @@ class SCSim.SimRun
   start: ->
     SCSim.helpers.setupResources @gameState
     @sim.say "start"
+    @simHasStarted = true
 
 
 class SCSim.Simulation extends SCSim.Behavior
