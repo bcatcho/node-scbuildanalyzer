@@ -5,7 +5,7 @@ _ = root._ #require underscore
 
 SCSim.helpers =
   setupResources: (gameState) ->
-    gameState.resources.minerals =50
+    gameState.resources.minerals = 50
     gameState.resources.gas = 0
     gameState.supply.inUse = 0
     gameState.supply.cap = 10

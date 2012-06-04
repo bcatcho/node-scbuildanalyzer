@@ -7,7 +7,7 @@
   SCSim = root.SCSim;
 
   runSim = function(harvesterCount, simLength, smarts) {
-    var d, dataChunkTime, dataFirstPass, e, i, logs, n, perChunkToPerMin, results, sim, simRun, simTickLength, tickToDate, time, _i, _j, _len, _ref,
+    var d, dataChunkTime, dataFirstPass, e, logs, n, perChunkToPerMin, results, sim, simRun, simTickLength, tickToDate, time, _i, _len, _ref,
       _this = this;
     if (simLength == null) {
       simLength = 600;
@@ -22,29 +22,32 @@
     simRun = new SCSim.SimRun(SCSim.data, smarts);
     sim = simRun.sim;
     simRun.emitter.observe('depositMinerals', function(e) {
-      return logs.mineralsCollected.push([e.time.sec, e.args[0] / (e.time.sec / 60)]);
+      return logs.mineralsCollected.push({
+        time: e.time.sec,
+        amt: e.args[0]
+      });
     });
     simRun.start();
-    for (i = _i = 1; 1 <= simTickLength ? _i <= simTickLength : _i >= simTickLength; i = 1 <= simTickLength ? ++_i : --_i) {
+    while (!(simRun.sim.time.sec >= simLength)) {
       simRun.update();
     }
     results = {
       data: [],
       markings: []
     };
-    dataChunkTime = 25.;
+    dataChunkTime = 10.;
     dataFirstPass = [];
     _ref = logs.mineralsCollected;
-    for (_j = 0, _len = _ref.length; _j < _len; _j++) {
-      e = _ref[_j];
-      time = Math.floor(e[0] / dataChunkTime);
+    for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+      e = _ref[_i];
+      time = Math.floor(e.time / dataChunkTime);
       if (dataFirstPass[time] === void 0) {
         dataFirstPass[time] = {
           time: tickToDate(time * dataChunkTime),
           amt: 0
         };
       }
-      dataFirstPass[time].amt += 5;
+      dataFirstPass[time].amt += e.amt;
     }
     perChunkToPerMin = function(amt) {
       return amt * (60 / dataChunkTime);
@@ -71,10 +74,10 @@
 
   addSeries = function(series, options, harvesterCount) {
     var results;
-    results = runSim(harvesterCount, 600, makeSmarts(harvesterCount));
+    results = runSim(harvesterCount, 300, makeSmarts(harvesterCount));
     series.push({
       data: results.data,
-      shadowSize: 0,
+      shadowSize: 1,
       lines: {
         lineWidth: 2
       }

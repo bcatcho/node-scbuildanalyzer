@@ -15,26 +15,27 @@ runSim = (harvesterCount, simLength = 600, smarts) ->
   simRun = new SCSim.SimRun SCSim.data, smarts
   sim = simRun.sim
   simRun.emitter.observe 'depositMinerals',
-     (e) => logs.mineralsCollected.push [e.time.sec, e.args[0]/(e.time.sec/60)]
+     (e) => logs.mineralsCollected.push
+      time: e.time.sec
+      amt: e.args[0]
 
   # run the simulation
   simRun.start()
-  simRun.update() for i in [1..simTickLength]
+  simRun.update() until simRun.sim.time.sec >= simLength
 
   # process the logs
   results =
     data: []
     markings: []
 
-  # TODO make config setting, this just happens to look cool
-  dataChunkTime = (25)
+  dataChunkTime = (10)
 
   dataFirstPass = []
   for e in logs.mineralsCollected
-    time = Math.floor(e[0] / dataChunkTime)
+    time = Math.floor(e.time / dataChunkTime)
     if dataFirstPass[time] is undefined
       dataFirstPass[time] = {time: tickToDate(time * dataChunkTime),  amt: 0}
-    dataFirstPass[time].amt += 5
+    dataFirstPass[time].amt += e.amt
 
   perChunkToPerMin = (amt) -> amt * (60/dataChunkTime)
   results.data = ([d.time, perChunkToPerMin(d.amt)] for n, d of dataFirstPass)
@@ -48,10 +49,10 @@ makeSmarts = (harvesterCount) ->
   smarts
 
 addSeries = (series, options, harvesterCount) ->
-  results = runSim harvesterCount, 600, makeSmarts(harvesterCount)
+  results = runSim harvesterCount, 300, makeSmarts(harvesterCount)
   series.push
     data: results.data
-    shadowSize: 0
+    shadowSize: 1
     lines:
       lineWidth: 2
   options.grid.markings = options.grid.markings.concat results.markings

@@ -23,7 +23,6 @@ class SCSim.PrimaryStructure extends SCSim.Behavior
     @_rallyResource = @_mins[0]
 
   getMostAvailableMinPatch: ->
-    # TODO you don't understand how this works
     _(@_mins).min (m) -> m.get "targetedBy"
 
   @defaultState
@@ -54,12 +53,9 @@ class SCSim.SupplyStructure extends SCSim.Behavior
 
 class SCSim.MinPatch extends SCSim.Behavior
   constructor:  ->
-    @amt = 100
+    @amt = 1000
     @_base
     @_targetedBy = 0
-    @harvesters = []
-    @harvesterMining = null
-    @harvesterOverlapThreshold = SCSim.config.harvesterOverlapThreshold
     super()
 
   base: -> @_base
@@ -68,36 +64,31 @@ class SCSim.MinPatch extends SCSim.Behavior
   getClosestAvailableResource: ->
     @_base.get "getMostAvailableMinPatch"
 
-  isAvailable: ->
-    @harvesterMining == null
+  isSaturated: ->
+    @_targetedBy > 2
 
-  isAvailableSoon: (harvester) ->
-    (@harvesterMiningTimeDone - @time.sec < @harvesterOverlapThreshold)
+  resourcesForHarvesterCount: ->
+    collectionRate = 0 if @_targetedBy is 0
+    collectionRate = 40 if @_targetedBy is 1
+    collectionRate = 80 if @_targetedBy is 2
+    collectionRate = 100 if @_targetedBy > 2
+
+    # FIXME - config value
+    rate = (SCSim.config.secsPerTick * (collectionRate/60))
+    return rate
 
   @defaultState
+    update: -> (t) ->
+      collectionAmt = @resourcesForHarvesterCount()
+      @say "depositMinerals", collectionAmt
+      @amt -= collectionAmt
+
     messages:
       setBase: (base) ->
         @_base = base
 
-      harvesterArrived: (harvester) ->
-        @harvesters.push harvester
-
       mineralsHarvested: (amtHarvested) ->
         @amt -= amtHarvested
-
-      harvestBegan: (harvester, timeMiningDone) ->
-        @harvesterMiningTimeDone = timeMiningDone
-        @harvesterMining = harvester
-
-      harvestComplete: (harvester, amtMined) ->
-        @harvesterMining = null
-        @harvesters = _(@harvesters).rest()
-        @amt -= amtMined
-
-      harvestAborted: (harvester) ->
-        @harvesters = _(@harvesters).without(harvester)
-        if @harvesterMining is harvester
-          @harvesterMining = null
 
       targetedByHarvester: ->
         @_targetedBy += 1
@@ -119,63 +110,9 @@ class SCSim.Harvester extends SCSim.Behavior
     messages:
       gatherFromResource: (resource) ->
         @targetResource = resource
+        
+        if @targetResource.get "isSaturated"
+          nextResource = @targetResource.get "getClosestAvailableResource"
+          @targetResource = nextResource
+
         @targetResource.say "targetedByHarvester"
-        @go "approachResource"
-
-  @state "approachResource"
-    update: ->
-      @sayAfter @t_toBase, "resourceReached"
-
-    messages:
-      resourceReached: ->
-        @targetResource.say "harvesterArrived", @
-        @go "waitAtResource"
-
-  @state "waitAtResource"
-    update: -> ->
-      # FIXME breakes "dont switch state in update loop convention?"
-      @go "harvest" if @targetResource.get "isAvailable"
-
-    enterState: ->
-      if @targetResource.get "isAvailable"
-        @go "harvest"
-      else if not @targetResource.get "isAvailableSoon"
-        nextResource = @targetResource.get "getClosestAvailableResource"
-        @say "changeTargetResource", nextResource if nextResource
-
-    messages:
-      changeTargetResource: (newResource) ->
-        @targetResource.say "harvestAborted", @
-        @targetResource.say "untargetedByHarvester"
-        @targetResource = newResource
-        @targetResource.say "targetedByHarvester"
-        @go "approachResource"
-
-  @state "harvest"
-    update: ->
-      @sayAfter @t_mine, "harvestComplete"
-
-    enterState: ->
-      @targetResource.say "harvestBegan", @, @time.sec + @t_mine
-
-    messages:
-      harvestComplete: ->
-        @targetResource.say "harvestComplete", @, @collectAmt
-        @go "approachDropOff", @targetResource.get "base"
-
-  @state "approachDropOff"
-    update: (dropOff) ->
-      @sayAfter @t_toBase, "dropOffReached", dropOff
-
-    messages:
-      dropOffReached: (dropOff) ->
-        @go "dropOff", dropOff
-
-  @state "dropOff"
-    enterState: (dropOff) ->
-      dropOff.say "depositMinerals", @collectAmt
-      @say "dropOffComplete", dropOff
-
-    messages:
-      dropOffComplete: (dropOff) ->
-        @go "approachResource"
