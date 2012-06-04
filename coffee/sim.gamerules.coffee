@@ -13,7 +13,6 @@ enumFromList = (list...) ->
 
 SCe.Msg = enumFromList "depositMinerals", "trainingComplete", "trainUnit"
 
-
 # Tracks game state by observing and evaluating sim events with GameRules
 class SCSim.GameState
   constructor: (emitter, rules) ->

@@ -28,7 +28,6 @@
     for (i = _i = 1; 1 <= simTickLength ? _i <= simTickLength : _i >= simTickLength; i = 1 <= simTickLength ? ++_i : --_i) {
       simRun.update();
     }
-    console.log(sim.makeActor("pylon"));
     results = {
       data: [],
       markings: []

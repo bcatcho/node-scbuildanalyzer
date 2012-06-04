@@ -16,7 +16,7 @@
 
     function BuildOrder() {
       this.build = [];
-      this.interp = new SCSim.GameCmdInterpreter;
+      this.interpreter = new SCSim.GameCmdInterpreter;
     }
 
     BuildOrder.prototype.decideNextCommand = function(hud, time, rules) {
@@ -24,7 +24,7 @@
         return null;
       }
       if (this.build[0].seconds <= time.sec && this.build[0].iterator(hud, rules)) {
-        if (this.interp.canExecute(hud, rules, this.build[0].cmd)) {
+        if (this.interpreter.canExecute(hud, rules, this.build[0].cmd)) {
           return this.build.pop(0).cmd;
         }
       }
@@ -50,21 +50,20 @@
 
   SCSim.SimRun = (function() {
 
-    function SimRun(gameData, smarts) {
+    function SimRun(gameData, buildOrder) {
       this.gameData = gameData != null ? gameData : SCSim.data;
       this.rules = new SCSim.GameRules(this.gameData);
-      this.smarts = smarts != null ? smarts : new SCSim.BuildOrder(this.rules);
+      this.buildOrder = buildOrder != null ? buildOrder : new SCSim.BuildOrder(this.rules);
       this.emitter = new SCSim.EventEmitter;
       this.gameState = new SCSim.GameState(this.emitter, this.rules);
       this.sim = new SCSim.Simulation(this.emitter, this.gameData);
-      this.interp = new SCSim.GameCmdInterpreter;
+      this.interpreter = new SCSim.GameCmdInterpreter;
     }
 
     SimRun.prototype.update = function() {
       var command;
-      command = this.smarts.decideNextCommand(this.gameState, this.sim.time, this.rules);
-      if (command) {
-        this.interp.execute(this.gameState, this.rules, command);
+      if (command = this.buildOrder.decideNextCommand(this.gameState, this.sim.time, this.rules)) {
+        this.interpreter.execute(this.gameState, this.rules, command);
       }
       return this.sim.update();
     };

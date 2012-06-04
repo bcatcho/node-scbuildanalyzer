@@ -7,13 +7,13 @@ _ = root._ #require underscore
 class SCSim.BuildOrder
   constructor: ->
     @build = []
-    @interp = new SCSim.GameCmdInterpreter
+    @interpreter = new SCSim.GameCmdInterpreter
 
   decideNextCommand: (hud, time, rules) ->
     if (@build.length == 0)
       return null
     if (@build[0].seconds <= time.sec and @build[0].iterator(hud,rules))
-      if (@interp.canExecute hud, rules, @build[0].cmd)
+      if (@interpreter.canExecute hud, rules, @build[0].cmd)
         return @build.pop(0).cmd
     null
 
@@ -24,22 +24,18 @@ class SCSim.BuildOrder
 
 
 class SCSim.SimRun
-  constructor: (gameData, smarts) ->
+  constructor: (gameData, buildOrder) ->
     @gameData = gameData ? SCSim.data
     @rules = new SCSim.GameRules @gameData
-    @smarts = smarts ? new SCSim.BuildOrder @rules
+    @buildOrder = buildOrder ? new SCSim.BuildOrder @rules
     @emitter = new SCSim.EventEmitter
     @gameState = new SCSim.GameState @emitter, @rules
     @sim = new SCSim.Simulation @emitter, @gameData
-    @interp = new SCSim.GameCmdInterpreter
+    @interpreter = new SCSim.GameCmdInterpreter
 
   update: ->
-    # pass the current gamestate (HUD) to the smarts
-    command = @smarts.decideNextCommand @gameState, @sim.time, @rules
-    # execute whatever the smarts decides
-    if command
-      @interp.execute @gameState, @rules, command
-    # advance one tick
+    if command = @buildOrder.decideNextCommand @gameState, @sim.time, @rules
+      @interpreter.execute @gameState, @rules, command
     @sim.update()
 
   start: ->

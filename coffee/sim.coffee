@@ -21,9 +21,6 @@ runSim = (harvesterCount, simLength = 600, smarts) ->
   simRun.start()
   simRun.update() for i in [1..simTickLength]
 
-  # testing grounds
-  console.log sim.makeActor("pylon")
-
   # process the logs
   results =
     data: []

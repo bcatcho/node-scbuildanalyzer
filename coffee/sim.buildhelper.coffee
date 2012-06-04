@@ -10,3 +10,4 @@ class SCSim.BuildHelper
     cmd = SCSim.GameCmd.select("nexus").and.train "probe"
     for i in [0..numProbes-1]
       smarts.addToBuild i*17, iterator, cmd
+
