@@ -37,6 +37,7 @@ class SCSim.SimRun
   runForSeconds: (seconds) ->
     @start() if (!@simHasStarted)
     time = @sim.time
+    seconds += time.sec
     @update() until time.sec > seconds
 
   update: ->
@@ -44,10 +45,16 @@ class SCSim.SimRun
       @interpreter.execute @gameState, @rules, command
     @sim.update()
 
-  start: ->
+  start: (mapSetupMethod) ->
     SCSim.helpers.setupResources @gameState
     @sim.say "start"
+    (mapSetupMethod ? SCSim.helpers.setupMap) @sim
     @simHasStarted = true
+
+  executeCmd: (command) ->
+    # this is a hook for outsiders to execute arbitrary commands.
+    # it is usefull for tests
+    @interpreter.execute @gameState, @rules, command
 
 
 class SCSim.Simulation extends SCSim.Behavior
@@ -81,9 +88,6 @@ class SCSim.Simulation extends SCSim.Behavior
     update: -> (t) ->
       @time.step(1)
       @subActors[actr].update(@time.sec) for actr of @subActors
-
-    enterState: ->
-      SCSim.helpers.setupMap @
 
     messages:
       buildStructure: (name) ->

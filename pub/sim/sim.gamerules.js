@@ -164,11 +164,14 @@
     }
 
     GameCmdInterpreter.prototype.execute = function(gameState, rules, cmd) {
-      var actor, actors;
+      var actors, cmdResult;
       actors = gameState.units[cmd.subject] || gameState.structures[cmd.subject];
-      actor = actors[0];
-      this._applyRuleForAction(gameState, rules, cmd.verb, cmd.verbObject);
-      return this._executeAction(actor, cmd.verb, cmd.verbObject);
+      cmdResult = actors[0];
+      if (cmd.verb && cmd.verbObject) {
+        this._applyRuleForAction(gameState, rules, cmd.verb, cmd.verbObject);
+        cmdResult = this._executeAction(cmdResult, cmd.verb, cmd.verbObject);
+      }
+      return cmdResult;
     };
 
     GameCmdInterpreter.prototype.canExecute = function(gameState, rules, cmd) {

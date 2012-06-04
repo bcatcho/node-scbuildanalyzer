@@ -63,9 +63,13 @@ class SCSim.MinPatch extends SCSim.Behavior
 
   getClosestAvailableResource: ->
     @_base.get "getMostAvailableMinPatch"
+  
+  getMostAvailableResource: ->
+    if (@_targetedBy > 0)
+      @_base.get "getMostAvailableMinPatch"
 
   isSaturated: ->
-    @_targetedBy > 2
+    @_targetedBy >= 1
 
   resourcesForHarvesterCount: ->
     collectionRate = 0 if @_targetedBy is 0
@@ -80,14 +84,14 @@ class SCSim.MinPatch extends SCSim.Behavior
   @defaultState
     update: -> (t) ->
       collectionAmt = @resourcesForHarvesterCount()
-      @say "depositMinerals", collectionAmt
-      @amt -= collectionAmt
+      @say "mineralsHarvested", collectionAmt
 
     messages:
       setBase: (base) ->
         @_base = base
 
       mineralsHarvested: (amtHarvested) ->
+        @_base.say "depositMinerals", amtHarvested
         @amt -= amtHarvested
 
       targetedByHarvester: ->
@@ -111,8 +115,8 @@ class SCSim.Harvester extends SCSim.Behavior
       gatherFromResource: (resource) ->
         @targetResource = resource
         
-        if @targetResource.get "isSaturated"
-          nextResource = @targetResource.get "getClosestAvailableResource"
+        if (nextResource = @targetResource.get "getMostAvailableResource")
+          @say "changeTargetResource"
           @targetResource = nextResource
 
         @targetResource.say "targetedByHarvester"

@@ -45,6 +45,9 @@ class SCSim.Trainer extends SCSim.Behavior
     @queued = []
     super()
 
+  queueLength: ->
+    @queued.length
+
   updateBuildQueue: ->
     if @building is undefined and @queued.length > 0
       @building = @sim.makeActor @queued[0]

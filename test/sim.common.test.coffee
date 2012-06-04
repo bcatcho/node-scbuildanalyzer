@@ -98,3 +98,15 @@ describe "SCSim.Trainable", ->
     actr.say "prop100"
     actr.behaviors.TestBehavior.prop.should.equal 100
 
+
+describe 'SCSim.Trainer', ->
+  simRun = new SCSim.SimRun
+  simRun.start()
+  base = simRun.executeCmd SCSim.GameCmd.select("nexus")
+
+  it 'should queue up two workers at base', ->
+    simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
+    simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
+    simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
+
+    base.behaviors["Trainer"].queued.length.should.equal 2

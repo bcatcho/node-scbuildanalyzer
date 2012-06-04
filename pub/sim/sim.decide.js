@@ -67,6 +67,7 @@
         this.start();
       }
       time = this.sim.time;
+      seconds += time.sec;
       _results = [];
       while (!(time.sec > seconds)) {
         _results.push(this.update());
@@ -82,10 +83,15 @@
       return this.sim.update();
     };
 
-    SimRun.prototype.start = function() {
+    SimRun.prototype.start = function(mapSetupMethod) {
       SCSim.helpers.setupResources(this.gameState);
       this.sim.say("start");
+      (mapSetupMethod != null ? mapSetupMethod : SCSim.helpers.setupMap)(this.sim);
       return this.simHasStarted = true;
+    };
+
+    SimRun.prototype.executeCmd = function(command) {
+      return this.interpreter.execute(this.gameState, this.rules, command);
     };
 
     return SimRun;
@@ -145,9 +151,6 @@
           }
           return _results;
         };
-      },
-      enterState: function() {
-        return SCSim.helpers.setupMap(this);
       },
       messages: {
         buildStructure: function(name) {

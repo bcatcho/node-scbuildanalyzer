@@ -119,6 +119,12 @@
       return this.actor.get(msgName, a, b, c, d);
     };
 
+    Behavior.prototype.getB = function() {
+      var args;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      return this.actor.getB.apply(this.actor, args);
+    };
+
     Behavior.state = function(name, stateObj) {
       if (!this.prototype.states) {
         this.prototype.states = {};
@@ -245,7 +251,17 @@
           return behavior[name].call(behavior, a, b, c, d);
         }
       }
-      return console.warn("failed to get " + prop);
+      return console.warn("failed to get " + name);
+    };
+
+    Actor.prototype.getB = function(behaviorName, name, a, b, c, d) {
+      var behavior;
+      if ((behavior = this.behaviors[behaviorName])) {
+        if (behavior[name]) {
+          return behavior[name].call(behavior, a, b, c, d);
+        }
+      }
+      return console.warn("failed to get " + behaviorName + "->" + name);
     };
 
     return Actor;

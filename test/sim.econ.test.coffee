@@ -10,6 +10,11 @@ should = chai.should()
 #configure
 SCSim.config.secsPerTick = .5 # to speed up tests
 
+testHelper =
+  setupMapWithNoProbes: (sim) ->
+    nexus = sim.makeActor "nexus"
+    nexus.say "trainInstantly"
+
 
 describe 'Simulation with one base one worker', ->
   simRun = new SCSim.SimRun
@@ -27,32 +32,26 @@ describe 'Simulation with one base one worker', ->
 
 describe 'Simulation with one base and two workers', ->
   simRun = new SCSim.SimRun
-  sim = simRun.sim
-  simRun.start()
-  base = simRun.gameState.structures.nexus[0]
+  simRun.start testHelper.setupMapWithNoProbes
+  harvestedMinPatchIds = [] # for a later test
+  simRun.emitter.observe "targetedByHarvester",
+    (e) => harvestedMinPatchIds.push e.simId
 
-  it 'should queue up two workers at base', ->
-    base.say "trainUnit", 'probe'
-    base.say "trainUnit", 'probe'
-    base.say "trainUnit", 'probe'
-    base.behaviors["Trainer"].queued.length.should.equal 2
-
-  it 'will make the first worker harvest while the 2nd builds', ->
-    simRun.update() while base.behaviors["Trainer"].queued.length > 0
-    base.behaviors["PrimaryStructure"].mineralAmt.should.be.above 0
+  simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
+  simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
+  simRun.executeCmd SCSim.GameCmd.select("nexus").and.train 'probe'
 
   it 'workers will seek other resources if theirs is taken', ->
-    timeOut = 50
-    simRun.emitter.observe "changeTargetResource", (e) => timeOut = -999
-    simRun.update() until timeOut-- < 0
-    timeOut.should.equal -999 - 1
+    timeOut = 100
+    harvesterChangedResources = false
+    simRun.emitter.observe "changeTargetResource",
+      (e) => harvesterChangedResources = true
+
+    simRun.update() while (timeOut-- >= 0 and harvesterChangedResources is false)
+
+    harvesterChangedResources.should.be.true
 
   it 'will find other min patches', ->
-    harvestedMinPatchIds = []
-    simRun.emitter.observe "harvestBegan",
-      (e) => harvestedMinPatchIds.push e.simId
-
-    simRun.update() for i in [1..40]
-    _(harvestedMinPatchIds).unique().length.should.be.above 1
+    _(harvestedMinPatchIds).unique().length.should.equal 2
 
 

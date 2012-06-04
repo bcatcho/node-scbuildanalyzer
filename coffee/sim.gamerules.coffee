@@ -100,9 +100,11 @@ class SCSim.GameCmdInterpreter
 
   execute: (gameState, rules, cmd) ->
     actors = gameState.units[cmd.subject] || gameState.structures[cmd.subject]
-    actor = actors[0]
-    @_applyRuleForAction gameState, rules, cmd.verb, cmd.verbObject
-    @_executeAction actor, cmd.verb, cmd.verbObject
+    cmdResult = actors[0] # FIXME this autoselects the first actor
+    if (cmd.verb and cmd.verbObject)
+      @_applyRuleForAction gameState, rules, cmd.verb, cmd.verbObject
+      cmdResult = @_executeAction cmdResult, cmd.verb, cmd.verbObject
+    return cmdResult
 
   canExecute: (gameState, rules, cmd) ->
     @testState.resources.minerals = gameState.resources.minerals

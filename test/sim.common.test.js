@@ -179,4 +179,17 @@
     });
   });
 
+  describe('SCSim.Trainer', function() {
+    var base, simRun;
+    simRun = new SCSim.SimRun;
+    simRun.start();
+    base = simRun.executeCmd(SCSim.GameCmd.select("nexus"));
+    return it('should queue up two workers at base', function() {
+      simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
+      simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
+      simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
+      return base.behaviors["Trainer"].queued.length.should.equal(2);
+    });
+  });
+
 }).call(this);

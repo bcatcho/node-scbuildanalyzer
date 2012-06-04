@@ -59,6 +59,9 @@ class SCSim.Behavior
 
   get: (msgName, a, b, c, d) ->
     @actor.get msgName, a, b, c, d
+  
+  getB: (args...) ->
+    @actor.getB.apply @actor, args
 
   @state: (name, stateObj) ->
     if not @::states
@@ -128,4 +131,11 @@ class SCSim.Actor
       if behavior[name] isnt undefined
         return behavior[name].call behavior, a, b, c, d
 
-    console.warn("failed to get #{prop}")
+    console.warn("failed to get #{name}")
+
+  getB: (behaviorName, name, a, b, c, d) ->
+    if (behavior = @behaviors[behaviorName])
+      if (behavior[name])
+        return behavior[name].call behavior, a, b, c, d
+
+    console.warn("failed to get #{behaviorName}->#{name}")

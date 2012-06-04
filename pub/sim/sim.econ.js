@@ -111,8 +111,14 @@
       return this._base.get("getMostAvailableMinPatch");
     };
 
+    MinPatch.prototype.getMostAvailableResource = function() {
+      if (this._targetedBy > 0) {
+        return this._base.get("getMostAvailableMinPatch");
+      }
+    };
+
     MinPatch.prototype.isSaturated = function() {
-      return this._targetedBy > 2;
+      return this._targetedBy >= 1;
     };
 
     MinPatch.prototype.resourcesForHarvesterCount = function() {
@@ -138,8 +144,7 @@
         return function(t) {
           var collectionAmt;
           collectionAmt = this.resourcesForHarvesterCount();
-          this.say("depositMinerals", collectionAmt);
-          return this.amt -= collectionAmt;
+          return this.say("mineralsHarvested", collectionAmt);
         };
       },
       messages: {
@@ -147,6 +152,7 @@
           return this._base = base;
         },
         mineralsHarvested: function(amtHarvested) {
+          this._base.say("depositMinerals", amtHarvested);
           return this.amt -= amtHarvested;
         },
         targetedByHarvester: function() {
@@ -180,8 +186,8 @@
         gatherFromResource: function(resource) {
           var nextResource;
           this.targetResource = resource;
-          if (this.targetResource.get("isSaturated")) {
-            nextResource = this.targetResource.get("getClosestAvailableResource");
+          if ((nextResource = this.targetResource.get("getMostAvailableResource"))) {
+            this.say("changeTargetResource");
             this.targetResource = nextResource;
           }
           return this.targetResource.say("targetedByHarvester");

@@ -83,6 +83,10 @@
       Trainer.__super__.constructor.call(this);
     }
 
+    Trainer.prototype.queueLength = function() {
+      return this.queued.length;
+    };
+
     Trainer.prototype.updateBuildQueue = function() {
       var _this = this;
       if (this.building === void 0 && this.queued.length > 0) {
