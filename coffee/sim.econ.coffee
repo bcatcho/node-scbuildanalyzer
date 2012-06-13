@@ -1,6 +1,7 @@
 root = exports ? this
 
 SCSim = root.SCSim ? {}; root.SCSim = SCSim
+SCSim.Enums ?= {}; SCe = SCSim.Enums # convenience enum lookup
 _ = root._ #require underscore
 
 
@@ -48,7 +49,7 @@ class SCSim.SupplyStructure extends SCSim.Behavior
         # it knows about Trainable thing. Needs an interface/contract?
         # Are structures inherently trainable? do we need a trainable behavior?
         # Structure behavior?
-        @say "supplyCapIncreased", @supplyAmt
+        @say SCe.Msg.supplyCapChanged, @supplyAmt
 
 
 class SCSim.MinPatch extends SCSim.Behavior

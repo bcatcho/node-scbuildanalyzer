@@ -44,10 +44,12 @@ makeSmarts = (harvesterCount) ->
   smarts = new SCSim.BuildOrder
   helper = new SCSim.BuildHelper
   helper.trainProbesConstantly smarts, harvesterCount
+  helper.trainSupplyConstantly smarts
+  console.log smarts
   smarts
 
 addSeries = (series, options, harvesterCount) ->
-  results = runSim harvesterCount, 300, makeSmarts(harvesterCount)
+  results = runSim harvesterCount, 600, makeSmarts(harvesterCount)
   series.push
     data: results.data
     shadowSize: 1
@@ -67,5 +69,5 @@ options =
 
 
 series = []
-{series, options} = addSeries series, options, 14
+{series, options} = addSeries series, options, 34
 $.plot $("#placeholder"), series, options

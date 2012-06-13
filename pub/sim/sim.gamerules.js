@@ -28,7 +28,7 @@
     return obj;
   };
 
-  SCe.Msg = enumFromList("depositMinerals", "trainingComplete", "trainUnit");
+  SCe.Msg = enumFromList("depositMinerals", "trainingComplete", "trainUnit", "buildStructure", "supplyCapChanged");
 
   SCSim.GameState = (function() {
 
@@ -65,6 +65,12 @@
         return e.args[0];
       }, function(minAmt) {
         return rules.applyCollectResources(_this, minAmt, 0);
+      });
+      obs(SCe.Msg.supplyCapChanged, function(e) {
+        return e.args[0];
+      }, function(e) {
+        console.log(e);
+        return rules.applySupplyCapChanged(_this, e);
       });
       obs(SCe.Msg.trainingComplete, function(e) {
         return e.args[0];
@@ -131,12 +137,23 @@
       return gameState.resources.gas += gas;
     };
 
+    GameRules.prototype.applySupplyCapChanged = function(gameState, supplyAmt) {
+      return gameState.supply.cap += supplyAmt;
+    };
+
     GameRules.prototype.applyTrainUnit = function(gameState, unitName) {
       var unit;
       unit = this.gameData.get(unitName);
       gameState.resources.minerals -= unit.min;
       gameState.resources.gas -= unit.gas;
       return gameState.supply.inUse += unit.supply;
+    };
+
+    GameRules.prototype.applyBuildStructure = function(gameState, structureName) {
+      var structure;
+      structure = this.gameData.get(structureName);
+      gameState.resources.minerals -= structure.min;
+      return gameState.resources.gas -= structure.gas;
     };
 
     return GameRules;
@@ -159,7 +176,8 @@
         }
       };
       this.verbToRule = {
-        train: "applyTrainUnit"
+        train: "applyTrainUnit",
+        build: "applyBuildStructure"
       };
     }
 
@@ -203,6 +221,9 @@
     GameCmdInterpreter.prototype._actions = {
       train: function(actor, verbObject) {
         return actor.say(SCe.Msg.trainUnit, verbObject);
+      },
+      build: function(actor, verbObject) {
+        return actor.say(SCe.Msg.buildStructure, verbObject);
       }
     };
 
@@ -227,6 +248,12 @@
     GameCmd.prototype.train = function(name) {
       var _ref2;
       _ref2 = ["train", name], this.verb = _ref2[0], this.verbObject = _ref2[1];
+      return this;
+    };
+
+    GameCmd.prototype.build = function(name) {
+      var _ref2;
+      _ref2 = ["build", name], this.verb = _ref2[0], this.verbObject = _ref2[1];
       return this;
     };
 

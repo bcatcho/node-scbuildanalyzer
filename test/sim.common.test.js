@@ -179,7 +179,7 @@
     });
   });
 
-  describe('SCSim.Trainer', function() {
+  describe('SCSim.UnitTrainer', function() {
     var base, simRun;
     simRun = new SCSim.SimRun;
     simRun.start();
@@ -188,7 +188,7 @@
       simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
       simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
       simRun.executeCmd(SCSim.GameCmd.select("nexus").and.train('probe'));
-      return base.behaviors["Trainer"].queued.length.should.equal(2);
+      return base.behaviors["UnitTrainer"].queued.length.should.equal(2);
     });
   });
 

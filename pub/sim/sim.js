@@ -65,12 +65,14 @@
     smarts = new SCSim.BuildOrder;
     helper = new SCSim.BuildHelper;
     helper.trainProbesConstantly(smarts, harvesterCount);
+    helper.trainSupplyConstantly(smarts);
+    console.log(smarts);
     return smarts;
   };
 
   addSeries = function(series, options, harvesterCount) {
     var results;
-    results = runSim(harvesterCount, 300, makeSmarts(harvesterCount));
+    results = runSim(harvesterCount, 600, makeSmarts(harvesterCount));
     series.push({
       data: results.data,
       shadowSize: 1,
@@ -98,7 +100,7 @@
 
   series = [];
 
-  _ref = addSeries(series, options, 14), series = _ref.series, options = _ref.options;
+  _ref = addSeries(series, options, 34), series = _ref.series, options = _ref.options;
 
   $.plot($("#placeholder"), series, options);
 

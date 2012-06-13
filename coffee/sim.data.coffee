@@ -45,12 +45,12 @@ behave = (name, args...) ->
   args: args
 
 units = [
-  ["probe", 50, 0, 17, 1, behave("Harvester"), behave("Trainable")]
+  ["probe", 50, 0, 17, 1, behave("Harvester"), behave("Trainable"), behave("StructureBuilder")]
 ]
 
 structures = [
   ["pylon", 100, 0, 25, behave("Trainable"), behave("SupplyStructure", 10)]
-  ["nexus", 400, 0, 100, behave("PrimaryStructure"), behave("Trainable"), behave("Trainer")]
+  ["nexus", 400, 0, 100, behave("PrimaryStructure"), behave("Trainable"), behave("UnitTrainer")]
 ]
 
 neutrals = [

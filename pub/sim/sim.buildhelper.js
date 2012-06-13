@@ -15,16 +15,29 @@
     function BuildHelper() {}
 
     BuildHelper.prototype.trainProbesConstantly = function(smarts, numProbes) {
-      var cmd, i, iterator, _i, _ref1, _results;
+      var cmd, i, iterator, _i, _ref1;
       iterator = function() {
         return true;
       };
       cmd = SCSim.GameCmd.select("nexus").and.train("probe");
-      _results = [];
       for (i = _i = 0, _ref1 = numProbes - 1; 0 <= _ref1 ? _i <= _ref1 : _i >= _ref1; i = 0 <= _ref1 ? ++_i : --_i) {
-        _results.push(smarts.addToBuild(i * 17, iterator, cmd));
+        smarts.addToBuild(i * 17, iterator, cmd);
       }
-      return _results;
+      return null;
+    };
+
+    BuildHelper.prototype.trainSupplyConstantly = function(smarts) {
+      var cmd, i, iterator, seconds, _i;
+      iterator = function(gState, rules) {
+        return true;
+      };
+      cmd = SCSim.GameCmd.select("probe").and.build("pylon");
+      smarts.addToBuild(17 * 3, iterator, cmd);
+      for (i = _i = 2; _i <= 6; i = ++_i) {
+        seconds = i * 17 * 5;
+        smarts.addToBuild(seconds, iterator, cmd);
+      }
+      return null;
     };
 
     return BuildHelper;

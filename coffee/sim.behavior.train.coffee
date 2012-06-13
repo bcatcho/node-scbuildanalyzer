@@ -16,7 +16,7 @@ class SCSim.Trainable extends SCSim.Behavior
   @defaultState
     update: -> ->
       if @startTime + @buildTime <= @time.sec
-        @say "complete"
+        @go "trained"
 
     enterState: ->
       @blockActor()
@@ -24,22 +24,20 @@ class SCSim.Trainable extends SCSim.Behavior
 
     messages:
       trainInstantly: () ->
-        @say "complete"
+        @go "trained"
 
       addCallback: (fn) ->
+        # Callbacks will be called on completion of training
         @callbacks.push(fn)
-
-      complete: ->
-        @unblockActor()
-        c(@actor) for c in @callbacks
-        @go "trained"
 
   @state "trained"
     enterState: ->
+      @unblockActor()
+      callback(@actor) for callback in @callbacks
       @say "trainingComplete", @actor
 
 
-class SCSim.Trainer extends SCSim.Behavior
+class SCSim.UnitTrainer extends SCSim.Behavior
   constructor: ->
     @building
     @queued = []
@@ -75,10 +73,11 @@ class SCSim.Trainer extends SCSim.Behavior
         @updateBuildQueue()
 
 
-class SCSim.WarpInBuilder extends SCSim.Behavior
+class SCSim.StructureBuilder extends SCSim.Behavior
   constructor: ->
+    super()
 
   @defaultState
     messages:
-      build: (structureName) ->
-        @sim.say "trainActor", structureName
+      buildStructure: (structureName) ->
+        actor = @sim.makeActor structureName

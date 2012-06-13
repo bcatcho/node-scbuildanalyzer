@@ -11,7 +11,7 @@ enumFromList = (list...) ->
   obj[str] = str for str in list
   obj
 
-SCe.Msg = enumFromList "depositMinerals", "trainingComplete", "trainUnit"
+SCe.Msg = enumFromList "depositMinerals", "trainingComplete", "trainUnit", "buildStructure", "supplyCapChanged"
 
 # Tracks game state by observing and evaluating sim events with GameRules
 class SCSim.GameState
@@ -35,6 +35,12 @@ class SCSim.GameState
     obs SCe.Msg.depositMinerals,
       (e) -> e.args[0],
       (minAmt) => rules.applyCollectResources @, minAmt, 0
+
+    obs SCe.Msg.supplyCapChanged,
+      (e) -> e.args[0]
+      (e) =>
+        console.log e
+        rules.applySupplyCapChanged @, e
     
     obs SCe.Msg.trainingComplete,
       (e) -> e.args[0],
@@ -76,11 +82,19 @@ class SCSim.GameRules
     gameState.resources.minerals += minerals
     gameState.resources.gas += gas
 
+  applySupplyCapChanged: (gameState, supplyAmt) ->
+    gameState.supply.cap += supplyAmt
+
   applyTrainUnit: (gameState, unitName) ->
     unit = @gameData.get unitName
     gameState.resources.minerals -= unit.min
     gameState.resources.gas -= unit.gas
     gameState.supply.inUse += unit.supply
+
+  applyBuildStructure: (gameState, structureName) ->
+    structure = @gameData.get structureName
+    gameState.resources.minerals -= structure.min
+    gameState.resources.gas -= structure.gas
 
 
 # Acts out the Cmd's that are emitted from the build order
@@ -97,6 +111,7 @@ class SCSim.GameCmdInterpreter
 
     @verbToRule =
       train: "applyTrainUnit"
+      build: "applyBuildStructure"
 
   execute: (gameState, rules, cmd) ->
     actors = gameState.units[cmd.subject] || gameState.structures[cmd.subject]
@@ -129,6 +144,9 @@ class SCSim.GameCmdInterpreter
     train: (actor, verbObject) ->
       actor.say SCe.Msg.trainUnit, verbObject
 
+    build: (actor, verbObject) ->
+      actor.say SCe.Msg.buildStructure, verbObject
+
 
 class SCSim.GameCmd
   constructor: (subject) ->
@@ -145,6 +163,10 @@ class SCSim.GameCmd
 
   train: (name) ->
     [@verb, @verbObject] = ["train", name]
+    return @
+
+  build: (name) ->
+    [@verb, @verbObject] = ["build", name]
     return @
 
 

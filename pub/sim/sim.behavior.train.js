@@ -35,7 +35,7 @@
       update: function() {
         return function() {
           if (this.startTime + this.buildTime <= this.time.sec) {
-            return this.say("complete");
+            return this.go("trained");
           }
         };
       },
@@ -45,26 +45,23 @@
       },
       messages: {
         trainInstantly: function() {
-          return this.say("complete");
+          return this.go("trained");
         },
         addCallback: function(fn) {
           return this.callbacks.push(fn);
-        },
-        complete: function() {
-          var c, _i, _len, _ref2;
-          this.unblockActor();
-          _ref2 = this.callbacks;
-          for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
-            c = _ref2[_i];
-            c(this.actor);
-          }
-          return this.go("trained");
         }
       }
     });
 
     Trainable.state("trained", {
       enterState: function() {
+        var callback, _i, _len, _ref2;
+        this.unblockActor();
+        _ref2 = this.callbacks;
+        for (_i = 0, _len = _ref2.length; _i < _len; _i++) {
+          callback = _ref2[_i];
+          callback(this.actor);
+        }
         return this.say("trainingComplete", this.actor);
       }
     });
@@ -73,21 +70,21 @@
 
   })(SCSim.Behavior);
 
-  SCSim.Trainer = (function(_super) {
+  SCSim.UnitTrainer = (function(_super) {
 
-    __extends(Trainer, _super);
+    __extends(UnitTrainer, _super);
 
-    function Trainer() {
+    function UnitTrainer() {
       this.building;
       this.queued = [];
-      Trainer.__super__.constructor.call(this);
+      UnitTrainer.__super__.constructor.call(this);
     }
 
-    Trainer.prototype.queueLength = function() {
+    UnitTrainer.prototype.queueLength = function() {
       return this.queued.length;
     };
 
-    Trainer.prototype.updateBuildQueue = function() {
+    UnitTrainer.prototype.updateBuildQueue = function() {
       var _this = this;
       if (this.building === void 0 && this.queued.length > 0) {
         this.building = this.sim.makeActor(this.queued[0]);
@@ -98,7 +95,7 @@
       }
     };
 
-    Trainer.defaultState({
+    UnitTrainer.defaultState({
       messages: {
         trainUnit: function(unitName) {
           this.queued.push(unitName);
@@ -120,25 +117,28 @@
       }
     });
 
-    return Trainer;
+    return UnitTrainer;
 
   })(SCSim.Behavior);
 
-  SCSim.WarpInBuilder = (function(_super) {
+  SCSim.StructureBuilder = (function(_super) {
 
-    __extends(WarpInBuilder, _super);
+    __extends(StructureBuilder, _super);
 
-    function WarpInBuilder() {}
+    function StructureBuilder() {
+      StructureBuilder.__super__.constructor.call(this);
+    }
 
-    WarpInBuilder.defaultState({
+    StructureBuilder.defaultState({
       messages: {
-        build: function(structureName) {
-          return this.sim.say("trainActor", structureName);
+        buildStructure: function(structureName) {
+          var actor;
+          return actor = this.sim.makeActor(structureName);
         }
       }
     });
 
-    return WarpInBuilder;
+    return StructureBuilder;
 
   })(SCSim.Behavior);
 
