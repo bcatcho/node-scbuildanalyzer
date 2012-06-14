@@ -12,6 +12,7 @@ runSim = (harvesterCount, simLength = 600, smarts) ->
   logs =
     mineralsCollected: []
 
+
   simRun = new SCSim.SimRun SCSim.data, smarts
   simRun.emitter.observe 'depositMinerals',
      (e) => logs.mineralsCollected.push
@@ -45,7 +46,6 @@ makeSmarts = (harvesterCount) ->
   helper = new SCSim.BuildHelper
   helper.trainProbesConstantly smarts, harvesterCount
   helper.trainSupplyConstantly smarts
-  console.log smarts
   smarts
 
 addSeries = (series, options, harvesterCount) ->
@@ -69,5 +69,5 @@ options =
 
 
 series = []
-{series, options} = addSeries series, options, 34
+{series, options} = addSeries series, options, 18
 $.plot $("#placeholder"), series, options

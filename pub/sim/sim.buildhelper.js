@@ -27,14 +27,14 @@
     };
 
     BuildHelper.prototype.trainSupplyConstantly = function(smarts) {
-      var cmd, i, iterator, seconds, _i;
-      iterator = function(gState, rules) {
+      var cmd, i, iterator, offset, seconds, _i;
+      iterator = function() {
         return true;
       };
       cmd = SCSim.GameCmd.select("probe").and.build("pylon");
-      smarts.addToBuild(17 * 3, iterator, cmd);
-      for (i = _i = 2; _i <= 6; i = ++_i) {
-        seconds = i * 17 * 5;
+      offset = 17 * 7;
+      for (i = _i = 0; _i <= 2; i = ++_i) {
+        seconds = offset + (i * 17 * 9);
         smarts.addToBuild(seconds, iterator, cmd);
       }
       return null;

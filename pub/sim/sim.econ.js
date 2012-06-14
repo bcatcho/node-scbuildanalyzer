@@ -78,8 +78,8 @@
     }
 
     SupplyStructure.prototype.instantiate = function(supply) {
-      this.supplyAmt = supply;
-      return SupplyStructure.__super__.instantiate.call(this);
+      SupplyStructure.__super__.instantiate.call(this);
+      return this.supplyAmt = supply;
     };
 
     SupplyStructure.defaultState({

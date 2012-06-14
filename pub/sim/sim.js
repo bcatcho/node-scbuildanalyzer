@@ -66,7 +66,6 @@
     helper = new SCSim.BuildHelper;
     helper.trainProbesConstantly(smarts, harvesterCount);
     helper.trainSupplyConstantly(smarts);
-    console.log(smarts);
     return smarts;
   };
 
@@ -100,7 +99,7 @@
 
   series = [];
 
-  _ref = addSeries(series, options, 34), series = _ref.series, options = _ref.options;
+  _ref = addSeries(series, options, 18), series = _ref.series, options = _ref.options;
 
   $.plot($("#placeholder"), series, options);
 

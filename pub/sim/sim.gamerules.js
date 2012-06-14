@@ -53,6 +53,24 @@
       return this.units[unit.actorName].push(unit);
     };
 
+    GameState.prototype.event_trainUnitComplete = function(unit) {
+      var u, _base, _name, _ref2;
+      u = SCSim.data.units[unit.actorName];
+      this.supply.inUse += u.supply;
+      if ((_ref2 = (_base = this.units)[_name = unit.actorName]) == null) {
+        _base[_name] = [];
+      }
+      return this.units[unit.actorName].push(unit);
+    };
+
+    GameState.prototype.event_trainStructureComplete = function(structure) {
+      var _base, _name, _ref2;
+      if ((_ref2 = (_base = this.structures)[_name = structure.actorName]) == null) {
+        _base[_name] = [];
+      }
+      return this.structures[structure.actorName].push(structure);
+    };
+
     GameState.prototype.observeEvents = function(emitter, rules) {
       var obs,
         _this = this;
@@ -67,32 +85,19 @@
         return rules.applyCollectResources(_this, minAmt, 0);
       });
       obs(SCe.Msg.supplyCapChanged, function(e) {
-        return e.args[0];
+        return [e.args[0], e.time];
       }, function(e) {
-        console.log(e);
-        return rules.applySupplyCapChanged(_this, e);
+        console.log([e[1].sec, _this.supply.cap, _this.supply.inUse]);
+        return rules.applySupplyCapChanged(_this, e[0]);
       });
-      obs(SCe.Msg.trainingComplete, function(e) {
+      return obs(SCe.Msg.trainingComplete, function(e) {
         return e.args[0];
       }, function(actor) {
-        var _base, _name, _ref2;
         if (SCSim.data.isStructure(actor.actorName)) {
-          if ((_ref2 = (_base = _this.structures)[_name = actor.actorName]) == null) {
-            _base[_name] = [];
-          }
-          return _this.structures[actor.actorName].push(actor);
+          return _this.event_trainStructureComplete(actor);
+        } else {
+          return _this.event_trainUnitComplete(actor);
         }
-      });
-      return obs("trainUnitComplete", function(e) {
-        return e.args[0];
-      }, function(unit) {
-        var u, _base, _name, _ref2;
-        u = SCSim.data.units[unit.actorName];
-        _this.supply.inUse += u.supply;
-        if ((_ref2 = (_base = _this.units)[_name = unit.actorName]) == null) {
-          _base[_name] = [];
-        }
-        return _this.units[unit.actorName].push(unit);
       });
     };
 

@@ -27,8 +27,8 @@
     }
 
     Trainable.prototype.instantiate = function() {
-      this.buildTime = (this.sim.gameData.get(this.actor.actorName)).buildTime;
-      return Trainable.__super__.instantiate.call(this);
+      Trainable.__super__.instantiate.call(this);
+      return this.buildTime = (this.sim.gameData.get(this.actor.actorName)).buildTime;
     };
 
     Trainable.defaultState({

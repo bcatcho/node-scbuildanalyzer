@@ -13,10 +13,10 @@ class SCSim.BuildHelper
     null
 
   trainSupplyConstantly: (smarts) ->
-    iterator = (gState, rules) -> true
+    iterator = () -> true
     cmd = SCSim.GameCmd.select("probe").and.build "pylon"
-    smarts.addToBuild (17*3), iterator, cmd
-    for i in [2..6]
-      seconds = i*17*5
+    offset = 17*7
+    for i in [0..2]
+      seconds = offset + (i*17*9)
       smarts.addToBuild seconds, iterator, cmd
     null

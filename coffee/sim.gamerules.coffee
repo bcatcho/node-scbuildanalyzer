@@ -26,6 +26,16 @@ class SCSim.GameState
     @units[unit.actorName] = [] if not @units[unit.actorName]
     @units[unit.actorName].push unit
 
+  event_trainUnitComplete: (unit) ->
+    u = SCSim.data.units[unit.actorName]
+    @supply.inUse += u.supply
+    @units[unit.actorName] ?= []
+    @units[unit.actorName].push unit
+
+  event_trainStructureComplete: (structure) ->
+    @structures[structure.actorName] ?= []
+    @structures[structure.actorName].push structure
+
   observeEvents: (emitter, rules) ->
     # convenience method
     obs = (eventName, filter, callBack) ->
@@ -37,27 +47,18 @@ class SCSim.GameState
       (minAmt) => rules.applyCollectResources @, minAmt, 0
 
     obs SCe.Msg.supplyCapChanged,
-      (e) -> e.args[0]
+      (e) -> [e.args[0], e.time]
       (e) =>
-        console.log e
-        rules.applySupplyCapChanged @, e
+        console.log [e[1].sec, @supply.cap, @supply.inUse]
+        rules.applySupplyCapChanged @, e[0]
     
     obs SCe.Msg.trainingComplete,
       (e) -> e.args[0],
       (actor) =>
-        # FIXME this is a terrible way to detect new buildings maybe
         if SCSim.data.isStructure actor.actorName
-          @structures[actor.actorName] ?= []
-          @structures[actor.actorName].push actor
-
-    obs "trainUnitComplete",
-      (e) -> e.args[0],
-      (unit) =>
-        u = SCSim.data.units[unit.actorName]
-        @supply.inUse += u.supply
-        @units[unit.actorName] ?= []
-        @units[unit.actorName].push unit
-
+          @event_trainStructureComplete actor
+        else
+          @event_trainUnitComplete actor
 
 class SCSim.GameRules
   constructor: (@gameData) ->

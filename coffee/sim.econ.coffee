@@ -40,8 +40,8 @@ class SCSim.SupplyStructure extends SCSim.Behavior
     super()
 
   instantiate: (supply) ->
-    @supplyAmt = supply
     super()
+    @supplyAmt = supply
 
   @defaultState
     messages:

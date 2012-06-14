@@ -25,7 +25,7 @@
       }
       if (this.build[0].seconds <= time.sec && this.build[0].iterator(hud, rules)) {
         if (this.interpreter.canExecute(hud, rules, this.build[0].cmd)) {
-          return this.build.pop(0).cmd;
+          return this.build.shift(0).cmd;
         }
       }
       return null;
@@ -38,10 +38,17 @@
         iterator: iterator,
         cmd: cmd
       };
-      index = _(this.build).sortedIndex(buildStep, function(bStep) {
-        return bStep.seconds;
-      });
+      index = this._findIndexForBuildTime(seconds);
       return this.build.splice(index, 0, buildStep);
+    };
+
+    BuildOrder.prototype._findIndexForBuildTime = function(seconds) {
+      var index;
+      index = 0;
+      while (this.build[index] && this.build[index].seconds <= seconds) {
+        index += 1;
+      }
+      return index;
     };
 
     return BuildOrder;
@@ -77,7 +84,8 @@
 
     SimRun.prototype.update = function() {
       var command;
-      if (command = this.buildOrder.decideNextCommand(this.gameState, this.sim.time, this.rules)) {
+      command = this.buildOrder.decideNextCommand(this.gameState, this.sim.time, this.rules);
+      if (command) {
         this.interpreter.execute(this.gameState, this.rules, command);
       }
       return this.sim.update();

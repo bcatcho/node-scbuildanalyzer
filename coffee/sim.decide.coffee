@@ -14,13 +14,23 @@ class SCSim.BuildOrder
       return null
     if (@build[0].seconds <= time.sec and @build[0].iterator(hud,rules))
       if (@interpreter.canExecute hud, rules, @build[0].cmd)
-        return @build.pop(0).cmd
+        return @build.shift(0).cmd
     null
 
   addToBuild: (seconds, iterator, cmd) ->
-    buildStep = { seconds, iterator, cmd }
-    index = _(@build).sortedIndex buildStep, (bStep) -> bStep.seconds
-    @build.splice index, 0, buildStep
+    buildStep =
+      seconds: seconds
+      iterator: iterator
+      cmd: cmd
+
+    index = @_findIndexForBuildTime seconds
+    @build.splice(index, 0, buildStep)
+
+  _findIndexForBuildTime: (seconds) ->
+    index = 0
+    while @build[index] and @build[index].seconds <= seconds
+      index +=1
+    return index
 
 
 class SCSim.SimRun
@@ -41,7 +51,8 @@ class SCSim.SimRun
     @update() until time.sec > seconds
 
   update: ->
-    if command = @buildOrder.decideNextCommand @gameState, @sim.time, @rules
+    command = @buildOrder.decideNextCommand @gameState, @sim.time, @rules
+    if command
       @interpreter.execute @gameState, @rules, command
     @sim.update()
 
